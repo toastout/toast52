@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>👔 짧은 그림 리폼실</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <style>
+    :root {
+      --bg-color: #f8f9fa; --text-color: #212529; --border-color: #dee2e6;
+      --section-bg: #ffffff; --btn-bg: #e9ecef; --btn-hover-bg: #dee2e6;
+      --accent-btn-bg: #228be6; --accent-btn-hover-bg: #1c7ed6;
+      --tool-active-bg: #e7f5ff; --tool-active-color: #1971c2;
+      --danger-color: #fa5252;
+    }
+    body.dark {
+      --bg-color: #121212; --text-color: #e9ecef; --border-color: #343a40;
+      --section-bg: #1e1e1e; --btn-bg: #343a40; --btn-hover-bg: #495057;
+      --tool-active-bg: #1864ab; --tool-active-color: #e7f5ff;
+    }
+    body {
+      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0; padding: 20px;
+      background-color: var(--bg-color); color: var(--text-color);
+      display: flex; justify-content: center; align-items: flex-start;
+      min-height: 100vh;
+      box-sizing: border-box;
+      overscroll-behavior: none;
+    }
+    .container {
+      width: 100%; max-width: 600px; /* 모바일 친화적으로 너비 축소 */
+      background-color: var(--section-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px; padding: 25px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    h1 { text-align: center; margin-top: 0; }
+    p.subtitle { color: var(--key-color, #868e96); line-height: 1.6; text-align: center; margin-bottom: 30px; }
+    
+    /* 업로드 영역 */
+    .upload-box {
+      border: 2px dashed var(--border-color); border-radius: 8px;
+      padding: 40px 20px; cursor: pointer; text-align: center;
+      transition: all 0.2s; min-height: 200px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .upload-box:hover, .upload-box.dragover { background-color: var(--bg-color); border-color: var(--accent-btn-bg); }
+    
+    /* 캔버스 영역 */
+    #workspace { display: none; text-align: center; }
+    #canvas-wrapper {
+        position: relative;
+        display: inline-block;
+        margin: 10px auto;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        touch-action: none;
+        max-width: 100%;
+    }
+    canvas { display: block; max-width: 100%; height: auto; cursor: crosshair; }
+
+    /* 도구 패널 (Grid Layout 적용) */
+    .toolbar {
+        display: flex; flex-direction: column; gap: 10px;
+        background: var(--bg-color); padding: 15px; border-radius: 8px; margin-bottom: 15px;
+        border: 1px solid var(--border-color);
+        align-items: center; /* 중앙 정렬 */
+    }
+    .tool-row {
+        display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; width: 100%;
+    }
+    
+    .tool-btn {
+        background: var(--btn-bg); color: var(--text-color); border: none;
+        width: 42px; height: 42px; border-radius: 8px; cursor: pointer; font-size: 1.2rem;
+        transition: all 0.2s;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+    }
+    .tool-btn:hover { background-color: var(--btn-hover-bg); }
+    .tool-btn.active { background-color: var(--tool-active-bg); color: var(--tool-active-color); font-weight: bold; border: 1px solid var(--tool-active-color); }
+    
+    .small-btn { width: auto; padding: 0 10px; font-size: 0.9rem; height: 36px;}
+
+    /* 옵션 패널 (선택된 도구의 세부 설정) */
+    #tool-options {
+        display: flex; gap: 10px; justify-content: center; align-items: center;
+        margin-top: 5px; min-height: 40px; flex-wrap: wrap;
+    }
+
+    input[type="color"] { width: 30px; height: 30px; border: none; background: none; cursor: pointer; padding: 0; border-radius: 50%; overflow: hidden; border: 1px solid var(--border-color); }
+    input[type="range"] { width: 100px; cursor: pointer; }
+    input[type="text"] {
+        padding: 6px; border: 1px solid var(--border-color); border-radius: 6px;
+        background: var(--section-bg); color: var(--text-color); width: 80px; text-align: center;
+    }
+    .checkbox-label { display: flex; align-items: center; gap: 4px; font-size: 0.8rem; cursor: pointer; user-select: none; }
+
+    /* 자르기 패널 */
+    #crop-panel {
+        display: none; gap: 10px; justify-content: center; background: var(--bg-color);
+        padding: 10px; border-radius: 8px; margin-bottom: 10px; flex-wrap: wrap;
+    }
+    #crop-panel.active { display: flex; }
+
+    /* 하단 버튼 */
+    .action-panel { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+    .download-buttons { display: flex; gap: 10px; }
+    .download-buttons button {
+        flex: 1; border: none; padding: 15px; border-radius: 8px;
+        font-size: 1.1rem; font-weight: 600; cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .download-buttons button:disabled { background-color: var(--btn-bg); color: #adb5bd; cursor: not-allowed; }
+    #reform-btn { background-color: var(--accent-btn-bg); color: #fff; }
+    #reform-btn:hover:not(:disabled) { background-color: var(--accent-btn-hover-bg); }
+    
+    /* 유틸리티 */
+    .header-controls { position: fixed; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 100; }
+    .header-controls button, .header-controls a {
+        background-color: var(--btn-bg); color: var(--text-color); border: none;
+        padding: 8px 12px; border-radius: 8px; cursor: pointer;
+        text-decoration: none; display: flex; align-items: center; justify-content: center;
+        transition: background-color 0.2s;
+        font-size: 1rem;
+    }
+    .header-controls button:hover, .header-controls a:hover { background-color: var(--btn-hover-bg); }
+
+    #change-image-btn { width: 100%; background-color: var(--btn-bg); color: var(--text-color); border: none; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 10px;}
+    
+    @media (max-width: 480px) {
+        .container { padding: 15px; }
+        .tool-btn { width: 38px; height: 38px; font-size: 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header-controls">
+    <a href="https://toastout.github.io/toast/" title="돌아가기">🍞</a>
+    <a href="https://toastout.github.io/toast5/" title="짧은 그림 세탁소(세탁, 워터마크)">🧼</a>
+	<a href="https://toastout.github.io/toast13/" title="공유 작업실(이어붙이기)">🖼️</a>
+  </div>
+
+  <div class="container">
+    <h1>👔 짧은 그림 리폼실</h1>
+    <p class="subtitle">🎨 JPG 변환 (메타데이터 제거)<br>+ 🧶 직접 그려서 리폼하기</p>
+    
+    <div id="upload-box" class="upload-box">
+      <span style="font-size: 2rem;">🖼️</span>
+      <p>작업할 이미지를 여기에 올려주세요</p>
+    </div>
+    <input type="file" id="file-input" accept="image/*" style="display: none;">
+    <input type="file" id="layer-input" accept="image/*" style="display: none;">
+    
+    <div id="workspace">
+        <button id="change-image-btn">🖼️ 다른 작업물 가져오기</button>
+
+        <div id="crop-panel">
+            <span style="font-size:0.9rem; align-self:center;">✂️ 영역을 드래그하세요</span>
+            <button class="tool-btn small-btn active" id="btn-apply-crop" style="color:white; background:var(--accent-btn-bg);">적용</button>
+            <button class="tool-btn small-btn" id="btn-cancel-crop">취소</button>
+        </div>
+
+        <div class="toolbar">
+            <!-- 1층: 그리기 도구 -->
+            <div class="tool-row">
+                <button class="tool-btn active" id="tool-pen" title="펜">🖌️</button>
+                <button class="tool-btn" id="tool-highlighter" title="형광펜">🖍️</button>
+                <button class="tool-btn" id="tool-mosaic" title="모자이크">💧</button>
+                <button class="tool-btn" id="tool-eraser" title="지우개">🧽</button>
+            <!-- 2층: 스티커 & 패치 -->
+                <button class="tool-btn" id="tool-sticker" title="이모지 스티커">😇</button>
+                <button class="tool-btn" id="tool-patch" title="단색 패치">🍡</button>
+            </div>
+
+            <!-- 3층: 기타 도구 -->
+            <div class="tool-row">
+                <button class="tool-btn" id="tool-text" title="텍스트">T</button>
+                <button class="tool-btn" id="tool-photo" title="사진 합치기">📸</button>
+                <button class="tool-btn" id="tool-crop" title="자르기">✂️</button>
+                <button class="tool-btn" id="tool-filter" title="흑백 필터 ON/OFF">🎞️</button>
+             <!-- 지하 1층: 실행 취소/초기화 -->
+                <button class="tool-btn" id="btn-undo" title="되돌리기">↩️</button>
+                <button class="tool-btn" id="btn-reset" title="초기화">🗑️</button>
+            </div>
+
+            <!-- 옵션 패널 (동적 변경) -->
+            <div id="tool-options">
+                <!-- 여기에 JS로 옵션 컨트롤이 들어옵니다 -->
+            </div>
+        </div>
+
+        <div id="canvas-wrapper">
+            <canvas id="main-canvas"></canvas>
+        </div>
+        
+        <div class="action-panel">
+            <div style="display: flex; gap: 10px; align-items: center; justify-content: center; font-size: 0.9rem;">
+                <label>출력 크기:</label>
+                <input type="number" id="img-width" placeholder="너비" style="width:70px; padding:5px; text-align:center;">
+                <span>x</span>
+                <input type="number" id="img-height" placeholder="높이" style="width:70px; padding:5px; text-align:center;" readonly>
+            </div>
+
+            <div class="download-buttons">
+                <button id="reform-btn" title="리폼된 이미지를 저장합니다.">🧶 리폼 (수정본 저장)</button>
+            </div>
+        </div>
+    </div>
+  </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Elements ---
+    const uploadBox = document.getElementById('upload-box');
+    const fileInput = document.getElementById('file-input');
+    const layerInput = document.getElementById('layer-input');
+    const workspace = document.getElementById('workspace');
+    const canvas = document.getElementById('main-canvas');
+    const ctx = canvas.getContext('2d');
+    const widthInput = document.getElementById('img-width');
+    const heightInput = document.getElementById('img-height');
+    const reformBtn = document.getElementById('reform-btn');
+    
+    // Tools Buttons
+    const tools = {
+        pen: document.getElementById('tool-pen'),
+        highlighter: document.getElementById('tool-highlighter'),
+        mosaic: document.getElementById('tool-mosaic'),
+        eraser: document.getElementById('tool-eraser'),
+        sticker: document.getElementById('tool-sticker'),
+        patch: document.getElementById('tool-patch'),
+        photo: document.getElementById('tool-photo'),
+        text: document.getElementById('tool-text'),
+        crop: document.getElementById('tool-crop'),
+        filter: document.getElementById('tool-filter')
+    };
+    
+    // Option Container
+    const toolOptions = document.getElementById('tool-options');
+    const cropPanel = document.getElementById('crop-panel');
+    const btnUndo = document.getElementById('btn-undo');
+    const btnReset = document.getElementById('btn-reset');
+    const btnApplyCrop = document.getElementById('btn-apply-crop');
+    const btnCancelCrop = document.getElementById('btn-cancel-crop');
+
+    // Reusable Option Elements (Created once, appended as needed)
+    const elColor = document.createElement('input'); elColor.type = 'color'; elColor.value = '#000000';
+    const elSize = document.createElement('input'); elSize.type = 'range'; elSize.min = 1; elSize.max = 100; elSize.value = 10;
+    const elTextInput = document.createElement('input'); elTextInput.type = 'text'; elTextInput.placeholder = '내용';
+    const elStickerInput = document.createElement('input'); elStickerInput.type = 'text'; elStickerInput.value = '😺'; elStickerInput.style.width = '40px';
+    const elBgCheck = document.createElement('input'); elBgCheck.type = 'checkbox';
+    const elBgColor = document.createElement('input'); elBgColor.type = 'color'; elBgColor.value = '#ffffff'; elBgColor.disabled = true;
+    const elPatchRect = document.createElement('button'); elPatchRect.className = 'tool-btn small-btn active'; elPatchRect.textContent = '■';
+    const elPatchCircle = document.createElement('button'); elPatchCircle.className = 'tool-btn small-btn'; elPatchCircle.textContent = '●';
+    const elChangePhoto = document.createElement('button'); elChangePhoto.className = 'tool-btn small-btn'; elChangePhoto.textContent = '🔄 사진 교체';
+
+    // Labels & Wrappers
+    const lblBg = document.createElement('label'); lblBg.className = 'checkbox-label'; lblBg.appendChild(elBgCheck); lblBg.append(' 배경');
+
+    // State
+    let originalImg = null;
+    let customPhotoImg = null;
+    let history = []; 
+    let currentMode = 'pen'; 
+    let isDrawing = false;
+    let currentPath = [];
+    let patchShape = 'rect';
+    let isFilterOn = false; // Simple Boolean Toggle
+    
+    // Crop State
+    let isCropping = false;
+    let cropStart = null;
+    let cropCurrent = null;
+
+    // --- Core Functions ---
+    
+    function handleFile(file) {
+        if (!file || !file.type.startsWith('image/')) return alert('이미지 파일만 가능합니다.');
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                originalImg = img;
+                history = [];
+                isFilterOn = false;
+                tools.filter.classList.remove('active');
+                initCanvas();
+                uploadBox.style.display = 'none';
+                workspace.style.display = 'block';
+                widthInput.value = img.naturalWidth;
+                heightInput.value = img.naturalHeight;
+                updateUI();
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function handleLayerFile(file) {
+        if (!file || !file.type.startsWith('image/')) return alert('이미지 파일만 가능합니다.');
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                customPhotoImg = img;
+                setMode('photo');
+                alert("사진이 준비되었습니다. 캔버스를 클릭하여 붙여넣으세요.");
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function initCanvas() {
+        if (!originalImg) return;
+        canvas.width = originalImg.naturalWidth;
+        canvas.height = originalImg.naturalHeight;
+        
+        const wrapper = document.getElementById('canvas-wrapper');
+        const maxWidth = Math.min(600, window.innerWidth - 50); // 모바일 여백 고려
+        let displayWidth = originalImg.naturalWidth;
+        let displayHeight = originalImg.naturalHeight;
+        
+        if (displayWidth > maxWidth) {
+            const scale = maxWidth / displayWidth;
+            displayWidth = maxWidth;
+            displayHeight = displayHeight * scale;
+        }
+
+        canvas.style.width = `${displayWidth}px`;
+        canvas.style.height = `${displayHeight}px`;
+        redraw();
+    }
+
+    // --- Redraw Logic ---
+    function redraw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // 1. Background (Filter)
+        ctx.filter = isFilterOn ? 'grayscale(100%)' : 'none';
+        if (originalImg) ctx.drawImage(originalImg, 0, 0);
+        ctx.filter = 'none';
+
+        // 2. Layers
+        // Helper Canvas for edits
+        const drawCanvas = document.createElement('canvas');
+        drawCanvas.width = canvas.width;
+        drawCanvas.height = canvas.height;
+        const dCtx = drawCanvas.getContext('2d');
+        dCtx.lineCap = 'round';
+        dCtx.lineJoin = 'round';
+
+        history.forEach(action => {
+            // Setup Context based on action
+            dCtx.globalCompositeOperation = 'source-over';
+            dCtx.globalAlpha = 1.0;
+            
+            if (action.type === 'path') {
+                dCtx.beginPath();
+                dCtx.lineWidth = action.size;
+
+                if (action.mode === 'eraser') {
+                    dCtx.globalCompositeOperation = 'destination-out';
+                } else if (action.mode === 'highlighter') {
+                    dCtx.globalCompositeOperation = 'multiply';
+                    dCtx.globalAlpha = 0.3;
+                    dCtx.strokeStyle = action.color;
+                } else if (action.mode === 'mosaic') {
+                    // Mosaic logic handled specially below
+                } else {
+                    dCtx.strokeStyle = action.color;
+                }
+
+                if (action.points.length > 0) {
+                    dCtx.moveTo(action.points[0].x, action.points[0].y);
+                    for (let i = 1; i < action.points.length; i++) {
+                        dCtx.lineTo(action.points[i].x, action.points[i].y);
+                    }
+                }
+                
+                if (action.mode === 'mosaic') {
+                    dCtx.save();
+                    dCtx.stroke(); 
+                    dCtx.clip();
+                    // Simple Blur Simulation
+                    dCtx.filter = 'blur(5px)';
+                    dCtx.drawImage(originalImg, 0, 0); 
+                    dCtx.restore();
+                    dCtx.filter = 'none';
+                } else {
+                    dCtx.stroke();
+                }
+
+            } else if (action.type === 'stamp') {
+                dCtx.font = `${action.size}px "Pretendard", "Apple Color Emoji", sans-serif`;
+                dCtx.textAlign = 'center';
+                dCtx.textBaseline = 'middle';
+                
+                if (action.bgColor) {
+                    const metrics = dCtx.measureText(action.text);
+                    const w = metrics.width;
+                    const p = action.size * 0.2;
+                    dCtx.fillStyle = action.bgColor;
+                    roundRect(dCtx, action.x - w/2 - p, action.y - action.size/2 - p, w + p*2, action.size + p*2, 8);
+                    dCtx.fill();
+                }
+                dCtx.fillStyle = action.color || '#000';
+                dCtx.fillText(action.text, action.x, action.y);
+
+            } else if (action.type === 'image') {
+                dCtx.drawImage(action.img, action.x - action.width/2, action.y - action.height/2, action.width, action.height);
+            
+            } else if (action.type === 'patch') {
+                dCtx.fillStyle = action.color;
+                dCtx.beginPath();
+                if (action.shape === 'rect') {
+                    dCtx.fillRect(action.x - action.size/2, action.y - action.size/2, action.size, action.size);
+                } else {
+                    dCtx.arc(action.x, action.y, action.size/2, 0, Math.PI * 2);
+                    dCtx.fill();
+                }
+            }
+        });
+
+        ctx.drawImage(drawCanvas, 0, 0);
+
+        if (currentMode === 'crop' && cropStart && cropCurrent) {
+            drawCropOverlay();
+        }
+        
+        // Update Reform Button State
+        // 리폼 버튼 활성화 조건: 필터가 켜져있거나, 히스토리(수정내역)가 하나라도 있을 때
+        reformBtn.disabled = !(history.length > 0 || isFilterOn);
+    }
+    
+    function drawCropOverlay() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        const x = Math.min(cropStart.x, cropCurrent.x);
+        const y = Math.min(cropStart.y, cropCurrent.y);
+        const w = Math.abs(cropCurrent.x - cropStart.x);
+        const h = Math.abs(cropCurrent.y - cropStart.y);
+        
+        ctx.fillRect(0, 0, canvas.width, y);
+        ctx.fillRect(0, y + h, canvas.width, canvas.height - (y + h));
+        ctx.fillRect(0, y, x, h);
+        ctx.fillRect(x + w, y, canvas.width - (x + w), h);
+        
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, w, h);
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+        if (w < 2 * r) r = w / 2;
+        if (h < 2 * r) r = h / 2;
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+    }
+
+    // --- Interaction ---
+    function getCoords(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+            x: (clientX - rect.left) * (canvas.width / rect.width),
+            y: (clientY - rect.top) * (canvas.height / rect.height)
+        };
+    }
+
+    const startDraw = (e) => {
+        const { x, y } = getCoords(e);
+
+        if (currentMode === 'crop') {
+            isCropping = true;
+            cropStart = { x, y };
+            cropCurrent = { x, y };
+            redraw();
+            return;
+        }
+
+        const isPathTool = ['pen', 'highlighter', 'eraser', 'mosaic'].includes(currentMode);
+
+        if (isPathTool) {
+            isDrawing = true;
+            currentPath = [{x, y}];
+            
+            // Preview Dot
+            if (currentMode !== 'mosaic') {
+                ctx.beginPath();
+                if(currentMode === 'eraser') {
+                    ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 1;
+                } else {
+                    ctx.fillStyle = elColor.value;
+                }
+                
+                if (currentMode !== 'highlighter') {
+                    ctx.arc(x, y, elSize.value / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    if(currentMode === 'eraser') ctx.stroke();
+                }
+            }
+        }
+    };
+
+    const moveDraw = (e) => {
+        const { x, y } = getCoords(e);
+        
+        if (currentMode === 'crop' && isCropping) {
+            e.preventDefault();
+            cropCurrent = { x, y };
+            redraw();
+            return;
+        }
+
+        const isPathTool = ['pen', 'highlighter', 'eraser', 'mosaic'].includes(currentMode);
+        if (!isDrawing || !isPathTool) return;
+        e.preventDefault();
+        
+        currentPath.push({x, y});
+        
+        // Real-time drawing
+        ctx.beginPath();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = elSize.value;
+
+        if (currentMode === 'eraser') {
+            ctx.globalCompositeOperation = 'destination-out'; 
+            ctx.strokeStyle = 'rgba(0,0,0,1)'; 
+        } else if (currentMode === 'mosaic') {
+             ctx.globalCompositeOperation = 'source-over';
+             ctx.strokeStyle = 'rgba(100,100,100,0.1)';
+        } else if (currentMode === 'highlighter') {
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.globalAlpha = 0.3;
+            ctx.strokeStyle = elColor.value;
+        } else {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = elColor.value;
+        }
+
+        if (currentPath.length >= 2) {
+            ctx.moveTo(currentPath[currentPath.length-2].x, currentPath[currentPath.length-2].y);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+        }
+        
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 1.0;
+    };
+
+    const endDraw = (e) => {
+        if (currentMode === 'crop') { isCropping = false; return; }
+
+        const isPathTool = ['pen', 'highlighter', 'eraser', 'mosaic'].includes(currentMode);
+
+        if (isPathTool && isDrawing) {
+            isDrawing = false;
+            history.push({
+                type: 'path',
+                mode: currentMode,
+                color: elColor.value,
+                size: parseInt(elSize.value),
+                points: currentPath
+            });
+            redraw();
+        } else if (!isPathTool) {
+            const { x, y } = getCoords(e);
+            let size = parseInt(elSize.value);
+
+            if (currentMode === 'sticker') {
+                history.push({ type: 'stamp', text: elStickerInput.value || '😺', x, y, size });
+            } else if (currentMode === 'patch') {
+                history.push({ type: 'patch', shape: patchShape, color: elColor.value, x, y, size });
+            } else if (currentMode === 'text') {
+                history.push({
+                    type: 'stamp',
+                    text: elTextInput.value || '텍스트',
+                    x, y, size: parseInt(elSize.value) * 3, // text scales with size slider
+                    color: elColor.value,
+                    bgColor: elBgCheck.checked ? elBgColor.value : null
+                });
+            } else if (currentMode === 'photo') {
+                if (!customPhotoImg) {
+                    alert("먼저 [🔄 사진 교체] 버튼을 눌러 사진을 선택해주세요.");
+                    layerInput.click();
+                    return;
+                }
+                const aspect = customPhotoImg.naturalWidth / customPhotoImg.naturalHeight;
+                const targetWidth = size * 2;
+                const targetHeight = targetWidth / aspect;
+                history.push({ type: 'image', img: customPhotoImg, x, y, width: targetWidth, height: targetHeight });
+            }
+            redraw();
+        }
+    };
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', moveDraw);
+    canvas.addEventListener('mouseup', endDraw);
+    canvas.addEventListener('touchstart', startDraw, {passive: false});
+    canvas.addEventListener('touchmove', moveDraw, {passive: false});
+    canvas.addEventListener('touchend', endDraw);
+
+    // --- Crop Action ---
+    btnApplyCrop.addEventListener('click', () => {
+        if (!cropStart || !cropCurrent) return alert('자를 영역을 선택해주세요.');
+        const x = Math.min(cropStart.x, cropCurrent.x);
+        const y = Math.min(cropStart.y, cropCurrent.y);
+        const w = Math.abs(cropCurrent.x - cropStart.x);
+        const h = Math.abs(cropCurrent.y - cropStart.y);
+        if (w < 10 || h < 10) return alert('영역이 너무 작습니다.');
+
+        if(!confirm('자르기를 적용하면 기존 편집 내역이 초기화됩니다. 진행할까요?')) return;
+
+        // Apply Crop
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = w;
+        tempCanvas.height = h;
+        const tCtx = tempCanvas.getContext('2d');
+        // Filter needs to be baked in if active? 
+        // -> For simplicity in V3.1, we apply current filter to the base image when cropping
+        tCtx.filter = isFilterOn ? 'grayscale(100%)' : 'none';
+        tCtx.drawImage(originalImg, x, y, w, h, 0, 0, w, h);
+        
+        const newImg = new Image();
+        newImg.onload = () => {
+            originalImg = newImg;
+            widthInput.value = w;
+            heightInput.value = h;
+            history = [];
+            cropStart = null; cropCurrent = null;
+            isFilterOn = false; // Reset filter flag since it's baked in
+            tools.filter.classList.remove('active');
+            setMode('pen');
+            initCanvas();
+        };
+        newImg.src = tempCanvas.toDataURL();
+    });
+
+    btnCancelCrop.addEventListener('click', () => { setMode('pen'); redraw(); });
+
+    // --- Toolbar UI Logic ---
+    function setMode(mode) {
+        if (mode === 'filter') {
+            isFilterOn = !isFilterOn;
+            tools.filter.classList.toggle('active', isFilterOn);
+            redraw();
+            return;
+        }
+
+        currentMode = mode;
+        Object.values(tools).forEach(btn => { if(btn !== tools.filter) btn.classList.remove('active'); });
+        if(tools[mode]) tools[mode].classList.add('active');
+        
+        // Sub Panels
+        cropPanel.classList.toggle('active', mode === 'crop');
+        
+        // Dynamic Option Rendering
+        toolOptions.innerHTML = ''; // Clear previous options
+        
+        const crosshairTools = ['pen', 'highlighter', 'eraser', 'mosaic'];
+        if(crosshairTools.includes(mode)) {
+            canvas.style.cursor = 'crosshair';
+            if(mode !== 'eraser' && mode !== 'mosaic') toolOptions.appendChild(elColor);
+            toolOptions.appendChild(elSize);
+        } else {
+            canvas.style.cursor = 'copy';
+        }
+
+        if (mode === 'sticker') {
+            toolOptions.appendChild(elStickerInput);
+            toolOptions.appendChild(elSize);
+        } else if (mode === 'patch') {
+            toolOptions.appendChild(elPatchRect);
+            toolOptions.appendChild(elPatchCircle);
+            toolOptions.appendChild(elColor);
+            toolOptions.appendChild(elSize);
+        } else if (mode === 'text') {
+            toolOptions.appendChild(elTextInput);
+            toolOptions.appendChild(elColor);
+            toolOptions.appendChild(elSize);
+            toolOptions.appendChild(lblBg);
+            toolOptions.appendChild(elBgColor);
+        } else if (mode === 'photo') {
+            toolOptions.appendChild(elChangePhoto);
+            toolOptions.appendChild(elSize);
+        }
+
+        if (mode !== 'crop') redraw();
+    }
+
+    // Attach Click Events
+    Object.keys(tools).forEach(key => {
+        tools[key].addEventListener('click', () => setMode(key));
+    });
+
+    // Option Events
+    elBgCheck.addEventListener('change', () => { elBgColor.disabled = !elBgCheck.checked; });
+    elPatchRect.addEventListener('click', () => { patchShape = 'rect'; elPatchRect.classList.add('active'); elPatchCircle.classList.remove('active'); });
+    elPatchCircle.addEventListener('click', () => { patchShape = 'circle'; elPatchCircle.classList.add('active'); elPatchRect.classList.remove('active'); });
+    elChangePhoto.addEventListener('click', () => { layerInput.click(); });
+    
+    layerInput.addEventListener('change', e => { handleLayerFile(e.target.files[0]); e.target.value = ''; });
+    
+    // History Events
+    btnUndo.addEventListener('click', () => { if(history.length > 0) { history.pop(); redraw(); } });
+    btnReset.addEventListener('click', () => { if(confirm("초기화하시겠습니까?")) { history = []; isFilterOn = false; tools.filter.classList.remove('active'); redraw(); } });
+
+    // Export
+    reformBtn.addEventListener('click', () => {
+        if (!originalImg) return;
+        const w = parseInt(widthInput.value) || originalImg.naturalWidth;
+        const h = parseInt(heightInput.value) || originalImg.naturalHeight;
+        
+        const exportCanvas = document.createElement('canvas');
+        exportCanvas.width = w;
+        exportCanvas.height = h;
+        const eCtx = exportCanvas.getContext('2d');
+        
+        // Filter
+        eCtx.filter = isFilterOn ? 'grayscale(100%)' : 'none';
+        eCtx.drawImage(originalImg, 0, 0, w, h);
+        eCtx.filter = 'none';
+
+        const scaleX = w / originalImg.naturalWidth;
+        const scaleY = h / originalImg.naturalHeight;
+
+        eCtx.lineCap = 'round';
+        eCtx.lineJoin = 'round';
+
+        history.forEach(action => {
+            const ax = action.x * scaleX;
+            const ay = action.y * scaleY;
+            const as = action.size * scaleX;
+
+            eCtx.globalCompositeOperation = 'source-over';
+            eCtx.globalAlpha = 1.0;
+
+            if (action.type === 'path') {
+                eCtx.beginPath();
+                eCtx.lineWidth = as;
+                
+                if (action.mode === 'eraser') eCtx.globalCompositeOperation = 'destination-out';
+                else if (action.mode === 'highlighter') {
+                    eCtx.globalCompositeOperation = 'multiply';
+                    eCtx.globalAlpha = 0.3;
+                    eCtx.strokeStyle = action.color;
+                } else if (action.mode === 'mosaic') {
+                    // Mosaic Export
+                    eCtx.save();
+                    eCtx.beginPath();
+                    if (action.points.length > 0) {
+                        eCtx.moveTo(action.points[0].x * scaleX, action.points[0].y * scaleY);
+                        for (let i = 1; i < action.points.length; i++) {
+                            eCtx.lineTo(action.points[i].x * scaleX, action.points[i].y * scaleY);
+                        }
+                    }
+                    eCtx.clip();
+                    eCtx.filter = 'blur(10px)';
+                    eCtx.drawImage(originalImg, 0, 0, w, h);
+                    eCtx.restore();
+                    eCtx.filter = 'none';
+                    return; 
+                } else {
+                    eCtx.strokeStyle = action.color;
+                }
+
+                if (action.points.length > 0) {
+                    eCtx.moveTo(action.points[0].x * scaleX, action.points[0].y * scaleY);
+                    for (let i = 1; i < action.points.length; i++) {
+                        eCtx.lineTo(action.points[i].x * scaleX, action.points[i].y * scaleY);
+                    }
+                }
+                eCtx.stroke();
+
+            } else if (action.type === 'stamp') {
+                eCtx.font = `${as}px "Pretendard", "Apple Color Emoji", sans-serif`;
+                eCtx.textAlign = 'center';
+                eCtx.textBaseline = 'middle';
+                if (action.bgColor) {
+                    const metrics = eCtx.measureText(action.text);
+                    const tw = metrics.width;
+                    const p = as * 0.2;
+                    eCtx.fillStyle = action.bgColor;
+                    roundRect(eCtx, ax - tw/2 - p, ay - as/2 - p, tw + p*2, as + p*2, 8 * scaleX);
+                    eCtx.fill();
+                }
+                eCtx.fillStyle = action.color || '#000';
+                eCtx.fillText(action.text, ax, ay);
+            } else if (action.type === 'image') {
+                const imgW = action.width * scaleX;
+                const imgH = action.height * scaleY;
+                eCtx.drawImage(action.img, ax - imgW/2, ay - imgH/2, imgW, imgH);
+            } else if (action.type === 'patch') {
+                eCtx.fillStyle = action.color;
+                eCtx.beginPath();
+                if (action.shape === 'rect') eCtx.fillRect(ax - as/2, ay - as/2, as, as);
+                else { eCtx.arc(ax, ay, as/2, 0, Math.PI * 2); eCtx.fill(); }
+            }
+        });
+
+        exportCanvas.toBlob(blob => {
+            const link = document.createElement('a');
+            link.download = `reform_${Date.now()}.jpg`;
+            link.href = URL.createObjectURL(blob);
+            link.click();
+        }, 'image/jpeg', 0.95);
+    });
+
+    // Misc
+    widthInput.addEventListener('input', () => {
+        const w = parseInt(widthInput.value);
+        if(w && originalImg) heightInput.value = Math.round(w * (originalImg.naturalHeight / originalImg.naturalWidth));
+    });
+    document.getElementById('change-image-btn').addEventListener('click', () => fileInput.click());
+    uploadBox.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', e => { handleFile(e.target.files[0]); e.target.value = ''; });
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eName => {
+        uploadBox.addEventListener(eName, e => { e.preventDefault(); e.stopPropagation(); });
+    });
+    uploadBox.addEventListener('dragenter', () => uploadBox.classList.add('dragover'));
+    uploadBox.addEventListener('dragleave', () => uploadBox.classList.remove('dragover'));
+    uploadBox.addEventListener('drop', e => {
+        uploadBox.classList.remove('dragover');
+        handleFile(e.dataTransfer.files[0]);
+    });
+    
+    // Initial UI Update
+    updateUI = () => { reformBtn.disabled = true; };
+});
+</script>
+</body>
+</html>
