@@ -1,1279 +1,786 @@
 <!DOCTYPE html>
 <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <title>👔 짧은 그림 리폼실</title>
+<head>
+  <meta charset="UTF-8" />
+  <title>👔 짧은 그림 리폼실</title>
+  
+  <!-- [iOS PWA 설정] -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="리폼실" />
+  <link rel="apple-touch-icon" href="https://toastout.github.io/toast/icon.png" /> 
 
-    <!-- [iOS PWA 설정] -->
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
-    />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
-    <meta name="apple-mobile-web-app-title" content="리폼실" />
-    <link
-      rel="apple-touch-icon"
-      href="https://toastout.github.io/toast/icon.png"
-    />
+  <style>
+    :root {
+      --bg-color: #f8f9fa; --text-color: #212529; --border-color: #dee2e6;
+      --section-bg: #ffffff; --btn-bg: #e9ecef; --btn-hover-bg: #dee2e6;
+      --accent-btn-bg: #228be6; --accent-btn-hover-bg: #1c7ed6;
+      --tool-active-bg: #e7f5ff; --tool-active-color: #1971c2;
+      --danger-color: #fa5252;
+    }
+    body.dark {
+      --bg-color: #121212; --text-color: #e9ecef; --border-color: #343a40;
+      --section-bg: #1e1e1e; --btn-bg: #343a40; --btn-hover-bg: #495057;
+      --tool-active-bg: #1864ab; --tool-active-color: #e7f5ff;
+    }
+    
+    * { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+      font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0; padding: 20px;
+      background-color: var(--bg-color); color: var(--text-color);
+      display: flex; justify-content: center; align-items: flex-start;
+      min-height: 100vh;
+      box-sizing: border-box;
+      overscroll-behavior: none;
+      -webkit-user-select: none; user-select: none;
+      padding-top: env(safe-area-inset-top);
+    }
 
-    <style>
-      :root {
-        --bg-color: #f8f9fa;
-        --text-color: #212529;
-        --border-color: #dee2e6;
-        --section-bg: #ffffff;
-        --btn-bg: #e9ecef;
-        --btn-hover-bg: #dee2e6;
-        --accent-btn-bg: #228be6;
-        --accent-btn-hover-bg: #1c7ed6;
-        --tool-active-bg: #e7f5ff;
-        --tool-active-color: #1971c2;
-        --danger-color: #fa5252;
-      }
-      body.dark {
-        --bg-color: #121212;
-        --text-color: #e9ecef;
-        --border-color: #343a40;
-        --section-bg: #1e1e1e;
-        --btn-bg: #343a40;
-        --btn-hover-bg: #495057;
-        --tool-active-bg: #1864ab;
-        --tool-active-color: #e7f5ff;
-      }
+    input[type="text"], input[type="number"] { -webkit-user-select: text; user-select: text; }
 
-      * {
-        touch-action: manipulation;
-        -webkit-tap-highlight-color: transparent;
-      }
-
-      body {
-        font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI",
-          Roboto, sans-serif;
-        margin: 0;
-        padding: 20px;
-        background-color: var(--bg-color);
-        color: var(--text-color);
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        min-height: 100vh;
-        box-sizing: border-box;
-        overscroll-behavior: none;
-        -webkit-user-select: none;
-        user-select: none;
-        padding-top: env(safe-area-inset-top);
-      }
-
-      input[type="text"],
-      input[type="number"] {
-        -webkit-user-select: text;
-        user-select: text;
-      }
-
-      .container {
-        width: 100%;
-        max-width: 600px;
-        background-color: var(--section-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 25px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-      }
-      h1 {
-        text-align: center;
-        margin-top: 0;
-      }
-      p.subtitle {
-        color: var(--key-color, #868e96);
-        line-height: 1.6;
-        text-align: center;
-        margin-bottom: 30px;
-      }
-
-      /* 업로드 영역 */
-      .upload-box {
-        border: 2px dashed var(--border-color);
-        border-radius: 8px;
-        padding: 40px 20px;
-        cursor: pointer;
-        text-align: center;
-        transition: all 0.2s;
-        min-height: 200px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-      }
-      .upload-box:hover,
-      .upload-box.dragover {
-        background-color: var(--bg-color);
-        border-color: var(--accent-btn-bg);
-      }
-
-      /* 캔버스 영역 */
-      #workspace {
-        display: none;
-        text-align: center;
-      }
-      #canvas-wrapper {
+    .container {
+      width: 100%; max-width: 600px;
+      background-color: var(--section-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px; padding: 25px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    h1 { text-align: center; margin-top: 0; }
+    p.subtitle { color: var(--key-color, #868e96); line-height: 1.6; text-align: center; margin-bottom: 30px; }
+    
+    /* 업로드 영역 */
+    .upload-box {
+      border: 2px dashed var(--border-color); border-radius: 8px;
+      padding: 40px 20px; cursor: pointer; text-align: center;
+      transition: all 0.2s; min-height: 200px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .upload-box:hover, .upload-box.dragover { background-color: var(--bg-color); border-color: var(--accent-btn-bg); }
+    
+    /* 캔버스 영역 */
+    #workspace { display: none; text-align: center; }
+    #canvas-wrapper {
         position: relative;
         display: inline-block;
         margin: 10px auto;
         border-radius: 8px;
         overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         touch-action: none;
         max-width: 100%;
-      }
-      canvas {
-        display: block;
-        max-width: 100%;
-        height: auto;
-        cursor: crosshair;
-      }
+        cursor: none; /* 커서 숨김 (미리보기 원 사용) */
+    }
+    canvas { display: block; max-width: 100%; height: auto; }
 
-      /* 도구 패널 */
-      .toolbar {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        background: var(--bg-color);
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 15px;
-        border: 1px solid var(--border-color);
-        align-items: center;
-      }
-      .tool-row {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        justify-content: center;
-        width: 100%;
-      }
-
-      .tool-btn {
-        background: var(--btn-bg);
-        color: var(--text-color);
-        border: none;
-        width: 42px;
-        height: 42px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 1.2rem;
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-      }
-      .tool-btn:hover {
-        background-color: var(--btn-hover-bg);
-      }
-      .tool-btn.active {
-        background-color: var(--tool-active-bg);
-        color: var(--tool-active-color);
-        font-weight: bold;
-        border: 1px solid var(--tool-active-color);
-      }
-
-      .small-btn {
-        width: auto;
-        padding: 0 10px;
-        font-size: 0.9rem;
-        height: 36px;
-      }
-
-      /* 옵션 패널 */
-      #tool-options {
-        display: flex;
-        gap: 10px;
-        justify-content: center;
-        align-items: center;
-        margin-top: 5px;
-        min-height: 40px;
-        flex-wrap: wrap;
-      }
-
-      .size-indicator {
-        font-size: 0.8rem;
-        color: var(--text-color);
-        min-width: 30px;
-        text-align: center;
-        font-variant-numeric: tabular-nums;
-      }
-
-      input[type="color"] {
-        width: 30px;
-        height: 30px;
-        border: none;
-        background: none;
-        cursor: pointer;
-        padding: 0;
+    /* 브러시 미리보기 (Targeting System) */
+    #brush-cursor {
+        position: absolute;
+        border: 1px solid rgba(0,0,0,0.5);
+        background-color: rgba(255,255,255,0.2);
         border-radius: 50%;
-        overflow: hidden;
-        border: 1px solid var(--border-color);
-      }
-      input[type="range"] {
-        width: 100px;
-        cursor: pointer;
-      }
-      input[type="text"] {
-        padding: 6px;
-        border: 1px solid var(--border-color);
-        border-radius: 6px;
-        background: var(--section-bg);
-        color: var(--text-color);
-        width: 80px;
-        text-align: center;
-      }
-      .checkbox-label {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 0.8rem;
-        cursor: pointer;
-        user-select: none;
-      }
-
-      /* 자르기 패널 */
-      #crop-panel {
+        pointer-events: none;
+        transform: translate(-50%, -50%);
+        z-index: 10;
         display: none;
-        gap: 10px;
-        justify-content: center;
-        background: var(--bg-color);
-        padding: 10px;
-        border-radius: 8px;
-        margin-bottom: 10px;
-        flex-wrap: wrap;
-      }
-      #crop-panel.active {
-        display: flex;
-      }
-
-      /* 하단 버튼 및 리사이즈 컨트롤 */
-      .action-panel {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        margin-top: 20px;
-      }
-
-      .resize-controls {
+        /* 내용물 중앙 정렬 (이모지 등 미리보기용) */
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
-        flex-wrap: wrap;
-        font-size: 0.9rem;
-        background: var(--btn-bg);
-        padding: 10px;
-        border-radius: 8px;
-      }
-      .resize-btns {
-        display: flex;
-        gap: 5px;
-      }
-      .resize-btns button {
-        padding: 4px 8px;
-        font-size: 0.8rem;
+        font-size: 10px; /* 임시 */
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    /* 도구 패널 */
+    .toolbar {
+        display: flex; flex-direction: column; gap: 10px;
+        background: var(--bg-color); padding: 15px; border-radius: 8px; margin-bottom: 15px;
         border: 1px solid var(--border-color);
-        border-radius: 4px;
-        background: var(--section-bg);
-        cursor: pointer;
-        color: var(--text-color);
-      }
-
-      .download-buttons {
-        display: flex;
-        gap: 10px;
-      }
-      .download-buttons button {
-        flex: 1;
-        border: none;
-        padding: 15px;
-        border-radius: 8px;
-        font-size: 1.1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background-color 0.2s;
-      }
-      .download-buttons button:disabled {
-        background-color: var(--btn-bg);
-        color: #adb5bd;
-        cursor: not-allowed;
-      }
-      #reform-btn {
-        background-color: var(--accent-btn-bg);
-        color: #fff;
-      }
-      #reform-btn:hover:not(:disabled) {
-        background-color: var(--accent-btn-hover-bg);
-      }
-
-      /* 유틸리티 */
-      .header-controls {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        display: flex;
-        gap: 10px;
-        z-index: 100;
-      }
-      .header-controls button,
-      .header-controls a {
-        background-color: var(--btn-bg);
-        color: var(--text-color);
-        border: none;
-        padding: 8px 12px;
-        border-radius: 8px;
-        cursor: pointer;
-        text-decoration: none;
-        display: flex;
         align-items: center;
-        justify-content: center;
+    }
+    .tool-row {
+        display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; width: 100%;
+    }
+    
+    .tool-btn {
+        background: var(--btn-bg); color: var(--text-color); border: none;
+        width: 42px; height: 42px; border-radius: 8px; cursor: pointer; font-size: 1.2rem;
+        transition: all 0.2s;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+    }
+    .tool-btn:hover { background-color: var(--btn-hover-bg); }
+    .tool-btn.active { background-color: var(--tool-active-bg); color: var(--tool-active-color); font-weight: bold; border: 1px solid var(--tool-active-color); }
+    
+    .small-btn { width: auto; padding: 0 10px; font-size: 0.9rem; height: 36px;}
+
+    /* 옵션 패널 */
+    #tool-options {
+        display: flex; gap: 10px; justify-content: center; align-items: center;
+        margin-top: 5px; min-height: 40px; flex-wrap: wrap;
+    }
+    
+    .size-indicator {
+        font-size: 0.8rem; color: var(--text-color); min-width: 30px; text-align: center; font-variant-numeric: tabular-nums;
+    }
+
+    input[type="color"] { width: 30px; height: 30px; border: none; background: none; cursor: pointer; padding: 0; border-radius: 50%; overflow: hidden; border: 1px solid var(--border-color); }
+    input[type="range"] { width: 100px; cursor: pointer; }
+    input[type="text"] {
+        padding: 6px; border: 1px solid var(--border-color); border-radius: 6px;
+        background: var(--section-bg); color: var(--text-color); width: 80px; text-align: center;
+    }
+    .checkbox-label { display: flex; align-items: center; gap: 4px; font-size: 0.8rem; cursor: pointer; user-select: none; }
+
+    /* 자르기 패널 */
+    #crop-panel {
+        display: none; gap: 10px; justify-content: center; background: var(--bg-color);
+        padding: 10px; border-radius: 8px; margin-bottom: 10px; flex-wrap: wrap;
+    }
+    #crop-panel.active { display: flex; }
+
+    /* 하단 버튼 및 리사이즈 컨트롤 */
+    .action-panel { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+    
+    .resize-controls {
+        display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
+        font-size: 0.9rem; background: var(--btn-bg); padding: 10px; border-radius: 8px;
+    }
+    .resize-btns { display: flex; gap: 5px; }
+    .resize-btns button {
+        padding: 4px 8px; font-size: 0.8rem; border: 1px solid var(--border-color);
+        border-radius: 4px; background: var(--section-bg); cursor: pointer; color: var(--text-color);
+    }
+    
+    .download-buttons { display: flex; gap: 10px; }
+    .download-buttons button {
+        flex: 1; border: none; padding: 15px; border-radius: 8px;
+        font-size: 1.1rem; font-weight: 600; cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .download-buttons button:disabled { background-color: var(--btn-bg); color: #adb5bd; cursor: not-allowed; }
+    #reform-btn { background-color: var(--accent-btn-bg); color: #fff; }
+    #reform-btn:hover:not(:disabled) { background-color: var(--accent-btn-hover-bg); }
+    
+    /* 유틸리티 */
+    .header-controls { position: fixed; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 100; }
+    .header-controls button, .header-controls a {
+        background-color: var(--btn-bg); color: var(--text-color); border: none;
+        padding: 8px 12px; border-radius: 8px; cursor: pointer;
+        text-decoration: none; display: flex; align-items: center; justify-content: center;
         transition: background-color 0.2s;
         font-size: 1rem;
-      }
-      .header-controls button:hover,
-      .header-controls a:hover {
-        background-color: var(--btn-hover-bg);
-      }
+    }
+    .header-controls button:hover, .header-controls a:hover { background-color: var(--btn-hover-bg); }
 
-      #change-image-btn {
-        width: 100%;
-        background-color: var(--btn-bg);
-        color: var(--text-color);
-        border: none;
-        padding: 10px;
-        border-radius: 8px;
-        font-weight: 600;
-        cursor: pointer;
-        margin-bottom: 10px;
-      }
+    #change-image-btn { width: 100%; background-color: var(--btn-bg); color: var(--text-color); border: none; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 10px;}
+    
+    @media (max-width: 480px) {
+        .container { padding: 15px; }
+        .tool-btn { width: 38px; height: 38px; font-size: 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header-controls">
+    <a href="https://toastout.github.io/toast/" title="돌아가기">🍞</a>
+    <a href="https://toastout.github.io/toast5/" title="짧은 그림 세탁소(세탁, 워터마크)">🧼</a>
+	<a href="https://toastout.github.io/toast13/" title="공유 작업실(이어붙이기)">🖼️</a>
+  </div>
 
-      @media (max-width: 480px) {
-        .container {
-          padding: 15px;
-        }
-        .tool-btn {
-          width: 38px;
-          height: 38px;
-          font-size: 1.1rem;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="header-controls">
-      <a href="https://toastout.github.io/toast/" title="돌아가기">🍞</a>
-      <a
-        href="https://toastout.github.io/toast5/"
-        title="짧은 그림 세탁소(세탁, 워터마크)"
-        >🧼</a
-      >
-      <a
-        href="https://toastout.github.io/toast13/"
-        title="공유 작업실(이어붙이기)"
-        >🖼️</a
-      >
+  <div class="container">
+    <h1>👔 짧은 그림 리폼실</h1>
+    <p class="subtitle">🎨 JPG 변환 (메타데이터 제거)<br>+ 🧶 직접 그려서 리폼하기</p>
+    
+    <div id="upload-box" class="upload-box">
+      <span style="font-size: 2rem;">🖼️</span>
+      <p>작업할 이미지를 여기에 올려주세요</p>
     </div>
-
-    <div class="container">
-      <h1>👔 짧은 그림 리폼실</h1>
-      <p class="subtitle">
-        🎨 JPG 변환 (메타데이터 제거)<br />+ 🧶 직접 그려서 리폼하기
-      </p>
-
-      <div id="upload-box" class="upload-box">
-        <span style="font-size: 2rem">🖼️</span>
-        <p>작업할 이미지를 여기에 올려주세요</p>
-      </div>
-      <input
-        type="file"
-        id="file-input"
-        accept="image/*"
-        style="display: none"
-      />
-      <input
-        type="file"
-        id="layer-input"
-        accept="image/*"
-        style="display: none"
-      />
-
-      <div id="workspace">
+    <input type="file" id="file-input" accept="image/*" style="display: none;">
+    <input type="file" id="layer-input" accept="image/*" style="display: none;">
+    
+    <div id="workspace">
         <button id="change-image-btn">🖼️ 다른 작업물 가져오기</button>
 
         <div id="crop-panel">
-          <span style="font-size: 0.9rem; align-self: center"
-            >✂️ 영역을 드래그하세요</span
-          >
-          <button
-            class="tool-btn small-btn active"
-            id="btn-apply-crop"
-            style="color: white; background: var(--accent-btn-bg)"
-          >
-            적용
-          </button>
-          <button class="tool-btn small-btn" id="btn-cancel-crop">취소</button>
+            <span style="font-size:0.9rem; align-self:center;">✂️ 영역을 드래그하세요</span>
+            <button class="tool-btn small-btn active" id="btn-apply-crop" style="color:white; background:var(--accent-btn-bg);">적용</button>
+            <button class="tool-btn small-btn" id="btn-cancel-crop">취소</button>
         </div>
 
         <div class="toolbar">
-          <!-- 1층: 그리기 도구 -->
-          <div class="tool-row">
-            <button class="tool-btn active" id="tool-pen" title="펜">🖌️</button>
-            <button class="tool-btn" id="tool-highlighter" title="형광펜">
-              🖍️
-            </button>
-            <button class="tool-btn" id="tool-mosaic" title="모자이크">
-              💧
-            </button>
-            <button class="tool-btn" id="tool-eraser" title="지우개">🧽</button>
+            <!-- 1층: 그리기 도구 -->
+            <div class="tool-row">
+                <button class="tool-btn active" id="tool-pen" title="펜">🖌️</button>
+                <button class="tool-btn" id="tool-highlighter" title="형광펜">🖍️</button>
+                <button class="tool-btn" id="tool-mosaic" title="모자이크">💧</button>
+                <button class="tool-btn" id="tool-eraser" title="지우개">🧽</button>
             <!-- 2층: 스티커 & 패치 -->
-            <button class="tool-btn" id="tool-sticker" title="이모지 스티커">
-              😇
-            </button>
-            <button class="tool-btn" id="tool-patch" title="단색 패치">
-              🍡
-            </button>
-          </div>
+                <button class="tool-btn" id="tool-sticker" title="이모지 스티커">😇</button>
+                <button class="tool-btn" id="tool-patch" title="단색 패치">🍡</button>
+            </div>
 
-          <!-- 3층: 기타 도구 -->
-          <div class="tool-row">
-            <button class="tool-btn" id="tool-text" title="텍스트">T</button>
-            <button class="tool-btn" id="tool-photo" title="사진 합치기">
-              📸
-            </button>
-            <button class="tool-btn" id="tool-crop" title="자르기">✂️</button>
-            <button class="tool-btn" id="tool-filter" title="흑백 필터 ON/OFF">
-              🎞️
-            </button>
-            <!-- 지하 1층: 실행 취소/초기화 -->
-            <button class="tool-btn" id="btn-undo" title="되돌리기">↩️</button>
-            <button class="tool-btn" id="btn-reset" title="초기화">🗑️</button>
-          </div>
+            <!-- 3층: 기타 도구 -->
+            <div class="tool-row">
+                <button class="tool-btn" id="tool-text" title="텍스트">T</button>
+                <button class="tool-btn" id="tool-photo" title="사진 합치기">📸</button>
+                <button class="tool-btn" id="tool-crop" title="자르기">✂️</button>
+                <button class="tool-btn" id="tool-filter" title="흑백 필터 ON/OFF">🎞️</button>
+             <!-- 지하 1층: 실행 취소/초기화 -->
+                <button class="tool-btn" id="btn-undo" title="되돌리기">↩️</button>
+                <button class="tool-btn" id="btn-reset" title="초기화">🗑️</button>
+            </div>
 
-          <!-- 옵션 패널 (동적 변경) -->
-          <div id="tool-options">
-            <!-- 여기에 JS로 옵션 컨트롤이 들어옵니다 -->
-          </div>
+            <!-- 옵션 패널 (동적 변경) -->
+            <div id="tool-options">
+                <!-- 여기에 JS로 옵션 컨트롤이 들어옵니다 -->
+            </div>
         </div>
 
         <div id="canvas-wrapper">
-          <canvas id="main-canvas"></canvas>
+            <canvas id="main-canvas"></canvas>
+            <div id="brush-cursor"></div>
         </div>
-
+        
         <div class="action-panel">
-          <!-- 실시간 리사이징 컨트롤 -->
-          <div class="resize-controls">
-            <label>출력 크기:</label>
-            <input
-              type="number"
-              id="img-width"
-              placeholder="너비"
-              style="width: 70px; padding: 5px; text-align: center"
-            />
-            <span>x</span>
-            <input
-              type="number"
-              id="img-height"
-              placeholder="높이"
-              style="width: 70px; padding: 5px; text-align: center"
-              readonly
-            />
-            <div class="resize-btns">
-              <button data-percent="0.5">50%</button>
-              <button data-percent="0.75">75%</button>
-              <button data-percent="1.0">100%</button>
+            <!-- 실시간 리사이징 컨트롤 -->
+            <div class="resize-controls">
+                <label>출력 크기:</label>
+                <input type="number" id="img-width" placeholder="너비" style="width:70px; padding:5px; text-align:center;">
+                <span>x</span>
+                <input type="number" id="img-height" placeholder="높이" style="width:70px; padding:5px; text-align:center;" readonly>
+                <div class="resize-btns">
+                    <button data-percent="0.25">25%</button>
+                    <button data-percent="0.5">50%</button>
+                    <button data-percent="0.75">75%</button>
+                    <button data-percent="1.0">100%</button>
+                </div>
             </div>
-          </div>
 
-          <div class="download-buttons">
-            <button id="reform-btn" title="리폼된 이미지를 저장합니다.">
-              🧶 리폼 (수정본 저장)
-            </button>
-          </div>
+            <div class="download-buttons">
+                <button id="reform-btn" title="리폼된 이미지를 저장합니다.">🧶 리폼 (수정본 저장)</button>
+            </div>
         </div>
-      </div>
     </div>
+  </div>
 
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        // [iOS 최적화]
-        document.addEventListener(
-          "dblclick",
-          function (event) {
-            event.preventDefault();
-          },
-          { passive: false }
-        );
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // [iOS 최적화] 더블 탭 확대 방지
+    document.addEventListener('dblclick', function(event) { event.preventDefault(); }, { passive: false });
 
-        // --- Elements ---
-        const uploadBox = document.getElementById("upload-box");
-        const fileInput = document.getElementById("file-input");
-        const layerInput = document.getElementById("layer-input");
-        const workspace = document.getElementById("workspace");
-        const canvas = document.getElementById("main-canvas");
-        const ctx = canvas.getContext("2d");
-        const widthInput = document.getElementById("img-width");
-        const heightInput = document.getElementById("img-height");
-        const reformBtn = document.getElementById("reform-btn");
-        const resizeBtns = document.querySelectorAll(".resize-btns button");
+    // [단축키 지원] Ctrl+Z Undo
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+            e.preventDefault();
+            if(history.length > 0) { history.pop(); redraw(); }
+        }
+    });
 
-        // Tools Buttons
-        const tools = {
-          pen: document.getElementById("tool-pen"),
-          highlighter: document.getElementById("tool-highlighter"),
-          mosaic: document.getElementById("tool-mosaic"),
-          eraser: document.getElementById("tool-eraser"),
-          sticker: document.getElementById("tool-sticker"),
-          patch: document.getElementById("tool-patch"),
-          photo: document.getElementById("tool-photo"),
-          text: document.getElementById("tool-text"),
-          crop: document.getElementById("tool-crop"),
-          filter: document.getElementById("tool-filter"),
+    // --- Elements ---
+    const uploadBox = document.getElementById('upload-box');
+    const fileInput = document.getElementById('file-input');
+    const layerInput = document.getElementById('layer-input');
+    const workspace = document.getElementById('workspace');
+    const canvas = document.getElementById('main-canvas');
+    const brushCursor = document.getElementById('brush-cursor');
+    const canvasWrapper = document.getElementById('canvas-wrapper');
+    const ctx = canvas.getContext('2d');
+    const widthInput = document.getElementById('img-width');
+    const heightInput = document.getElementById('img-height');
+    const reformBtn = document.getElementById('reform-btn');
+    const resizeBtns = document.querySelectorAll('.resize-btns button');
+    
+    // Tools Buttons
+    const tools = {
+        pen: document.getElementById('tool-pen'),
+        highlighter: document.getElementById('tool-highlighter'),
+        mosaic: document.getElementById('tool-mosaic'),
+        eraser: document.getElementById('tool-eraser'),
+        sticker: document.getElementById('tool-sticker'),
+        patch: document.getElementById('tool-patch'),
+        photo: document.getElementById('tool-photo'),
+        text: document.getElementById('tool-text'),
+        crop: document.getElementById('tool-crop'),
+        filter: document.getElementById('tool-filter')
+    };
+    
+    // UI Panels
+    const toolOptions = document.getElementById('tool-options');
+    const cropPanel = document.getElementById('crop-panel');
+    const btnUndo = document.getElementById('btn-undo');
+    const btnReset = document.getElementById('btn-reset');
+    const btnApplyCrop = document.getElementById('btn-apply-crop');
+    const btnCancelCrop = document.getElementById('btn-cancel-crop');
+
+    // Options UI
+    const elColor = document.createElement('input'); elColor.type = 'color'; elColor.value = '#000000';
+    const elSize = document.createElement('input'); elSize.type = 'range'; elSize.min = 1; elSize.max = 100; elSize.value = 10;
+    const elSizeLabel = document.createElement('span'); elSizeLabel.className = 'size-indicator'; elSizeLabel.textContent = '10';
+    const elTextInput = document.createElement('input'); elTextInput.type = 'text'; elTextInput.placeholder = '내용';
+    const elStickerInput = document.createElement('input'); elStickerInput.type = 'text'; elStickerInput.value = '😺'; elStickerInput.style.width = '40px';
+    const elBgCheck = document.createElement('input'); elBgCheck.type = 'checkbox';
+    const elBgColor = document.createElement('input'); elBgColor.type = 'color'; elBgColor.value = '#ffffff'; elBgColor.disabled = true;
+    const elPatchRect = document.createElement('button'); elPatchRect.className = 'tool-btn small-btn active'; elPatchRect.textContent = '■';
+    const elPatchCircle = document.createElement('button'); elPatchCircle.className = 'tool-btn small-btn'; elPatchCircle.textContent = '●';
+    const elChangePhoto = document.createElement('button'); elChangePhoto.className = 'tool-btn small-btn'; elChangePhoto.textContent = '🔄 사진 교체';
+    const lblBg = document.createElement('label'); lblBg.className = 'checkbox-label'; lblBg.appendChild(elBgCheck); lblBg.append(' 배경');
+
+    // Mosaic Options
+    const elMosaicBlur = document.createElement('button'); elMosaicBlur.className = 'tool-btn small-btn active'; elMosaicBlur.textContent = '💧';
+    const elMosaicPixel = document.createElement('button'); elMosaicPixel.className = 'tool-btn small-btn'; elMosaicPixel.textContent = '⬛';
+
+    // State
+    let originalImg = null;
+    let customPhotoImg = null;
+    let history = []; 
+    let currentMode = 'pen'; 
+    let isDrawing = false;
+    let currentPath = [];
+    let patchShape = 'rect';
+    let mosaicType = 'blur'; // 'blur' or 'pixel'
+    let isFilterOn = false;
+    
+    let isCropping = false;
+    let cropStart = null;
+    let cropCurrent = null;
+    let lastTap = 0; // for double tap gesture
+
+    // --- Functions ---
+    
+    function handleFile(file) {
+        if (!file || !file.type.startsWith('image/')) return alert('이미지 파일만 가능합니다.');
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                originalImg = img;
+                history = [];
+                isFilterOn = false;
+                tools.filter.classList.remove('active');
+                widthInput.value = img.naturalWidth;
+                heightInput.value = img.naturalHeight;
+                initCanvas(img.naturalWidth, img.naturalHeight);
+                uploadBox.style.display = 'none';
+                workspace.style.display = 'block';
+                updateUI();
+            };
+            img.src = e.target.result;
         };
+        reader.readAsDataURL(file);
+    }
 
-        // UI Panels
-        const toolOptions = document.getElementById("tool-options");
-        const cropPanel = document.getElementById("crop-panel");
-        const btnUndo = document.getElementById("btn-undo");
-        const btnReset = document.getElementById("btn-reset");
-        const btnApplyCrop = document.getElementById("btn-apply-crop");
-        const btnCancelCrop = document.getElementById("btn-cancel-crop");
-
-        // Options UI
-        const elColor = document.createElement("input");
-        elColor.type = "color";
-        elColor.value = "#000000";
-        const elSize = document.createElement("input");
-        elSize.type = "range";
-        elSize.min = 1;
-        elSize.max = 100;
-        elSize.value = 10;
-        const elSizeLabel = document.createElement("span");
-        elSizeLabel.className = "size-indicator";
-        elSizeLabel.textContent = "10"; // 사이즈 표기
-        const elTextInput = document.createElement("input");
-        elTextInput.type = "text";
-        elTextInput.placeholder = "내용";
-        const elStickerInput = document.createElement("input");
-        elStickerInput.type = "text";
-        elStickerInput.value = "😺";
-        elStickerInput.style.width = "40px";
-        const elBgCheck = document.createElement("input");
-        elBgCheck.type = "checkbox";
-        const elBgColor = document.createElement("input");
-        elBgColor.type = "color";
-        elBgColor.value = "#ffffff";
-        elBgColor.disabled = true;
-        const elPatchRect = document.createElement("button");
-        elPatchRect.className = "tool-btn small-btn active";
-        elPatchRect.textContent = "■";
-        const elPatchCircle = document.createElement("button");
-        elPatchCircle.className = "tool-btn small-btn";
-        elPatchCircle.textContent = "●";
-        const elChangePhoto = document.createElement("button");
-        elChangePhoto.className = "tool-btn small-btn";
-        elChangePhoto.textContent = "🔄 사진 교체";
-        const lblBg = document.createElement("label");
-        lblBg.className = "checkbox-label";
-        lblBg.appendChild(elBgCheck);
-        lblBg.append(" 배경");
-
-        // State
-        let originalImg = null;
-        let customPhotoImg = null;
-        let history = [];
-        let currentMode = "pen";
-        let isDrawing = false;
-        let currentPath = [];
-        let patchShape = "rect";
-        let isFilterOn = false;
-
-        let isCropping = false;
-        let cropStart = null;
-        let cropCurrent = null;
-
-        // --- Functions ---
-
-        function handleFile(file) {
-          if (!file || !file.type.startsWith("image/"))
-            return alert("이미지 파일만 가능합니다.");
-          const reader = new FileReader();
-          reader.onload = (e) => {
+    function handleLayerFile(file) {
+        if (!file || !file.type.startsWith('image/')) return alert('이미지 파일만 가능합니다.');
+        const reader = new FileReader();
+        reader.onload = (e) => {
             const img = new Image();
             img.onload = () => {
-              originalImg = img;
-              history = [];
-              isFilterOn = false;
-              tools.filter.classList.remove("active");
-
-              // 초기값: 원본 크기
-              widthInput.value = img.naturalWidth;
-              heightInput.value = img.naturalHeight;
-
-              initCanvas(img.naturalWidth, img.naturalHeight);
-
-              uploadBox.style.display = "none";
-              workspace.style.display = "block";
-              updateUI();
+                customPhotoImg = img;
+                setMode('photo');
+                alert("사진이 준비되었습니다. 캔버스를 클릭하여 붙여넣으세요.");
             };
             img.src = e.target.result;
-          };
-          reader.readAsDataURL(file);
-        }
+        };
+        reader.readAsDataURL(file);
+    }
 
-        function handleLayerFile(file) {
-          if (!file || !file.type.startsWith("image/"))
-            return alert("이미지 파일만 가능합니다.");
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-              customPhotoImg = img;
-              setMode("photo");
-              alert("사진이 준비되었습니다. 캔버스를 클릭하여 붙여넣으세요.");
-            };
-            img.src = e.target.result;
-          };
-          reader.readAsDataURL(file);
-        }
-
-        // Canvas Resizing Logic (Live)
-        function initCanvas(w, h) {
-          if (!originalImg) return;
-
-          canvas.width = w;
-          canvas.height = h;
-
-          // CSS Display size (responsive)
-          const wrapper = document.getElementById("canvas-wrapper");
-          const maxWidth = Math.min(600, window.innerWidth - 50);
-          let displayWidth = w;
-          let displayHeight = h;
-
-          if (displayWidth > maxWidth) {
+    function initCanvas(w, h) {
+        if (!originalImg) return;
+        canvas.width = w; canvas.height = h;
+        
+        const wrapper = document.getElementById('canvas-wrapper');
+        const maxWidth = Math.min(600, window.innerWidth - 50);
+        let displayWidth = w; let displayHeight = h;
+        
+        if (displayWidth > maxWidth) {
             const ratio = maxWidth / displayWidth;
             displayWidth = maxWidth;
             displayHeight = h * ratio;
-          }
-          canvas.style.width = `${displayWidth}px`;
-          canvas.style.height = `${displayHeight}px`;
-
-          redraw();
         }
+        canvas.style.width = `${displayWidth}px`;
+        canvas.style.height = `${displayHeight}px`;
+        redraw();
+    }
+    
+    function updateCanvasSize() {
+        if(!originalImg) return;
+        let newW = parseInt(widthInput.value);
+        if(!newW || newW < 1) newW = 100;
+        const ratio = originalImg.naturalHeight / originalImg.naturalWidth;
+        const newH = Math.round(newW * ratio);
+        heightInput.value = newH;
+        initCanvas(newW, newH);
+        updateCursor(); // Update cursor size as scale changed
+    }
 
-        // Live Resize Event
-        function updateCanvasSize() {
-          if (!originalImg) return;
-          let newW = parseInt(widthInput.value);
-          if (!newW || newW < 1) newW = 100;
-
-          // Aspect ratio maintained
-          const ratio = originalImg.naturalHeight / originalImg.naturalWidth;
-          const newH = Math.round(newW * ratio);
-          heightInput.value = newH;
-
-          initCanvas(newW, newH);
-        }
-
-        widthInput.addEventListener("input", updateCanvasSize);
-
-        resizeBtns.forEach((btn) => {
-          btn.addEventListener("click", () => {
-            if (!originalImg) return;
+    widthInput.addEventListener('input', updateCanvasSize);
+    resizeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            if(!originalImg) return;
             const percent = parseFloat(btn.dataset.percent);
             widthInput.value = Math.round(originalImg.naturalWidth * percent);
             updateCanvasSize();
-          });
+        });
+    });
+
+    // --- Brush Cursor Logic ---
+    function updateCursor(e) {
+        if (!originalImg || currentMode === 'crop') {
+            brushCursor.style.display = 'none'; return;
+        }
+        
+        const scale = canvas.offsetWidth / canvas.width; // Display px / Real px
+        const realSize = parseInt(elSize.value);
+        let displaySize = realSize * scale;
+        
+        // Reset styles
+        brushCursor.textContent = '';
+        brushCursor.style.borderRadius = '50%';
+        brushCursor.style.border = '1px solid #fff';
+        brushCursor.style.backgroundColor = 'transparent';
+        brushCursor.style.width = `${displaySize}px`;
+        brushCursor.style.height = `${displaySize}px`;
+
+        // Tool-specific cursor styles
+        if (currentMode === 'pen' || currentMode === 'highlighter') {
+             brushCursor.style.backgroundColor = elColor.value;
+             brushCursor.style.opacity = currentMode === 'highlighter' ? '0.3' : '0.5';
+        } 
+        else if (currentMode === 'eraser') {
+             brushCursor.style.backgroundColor = 'rgba(255,255,255,0.5)';
+             brushCursor.style.border = '1px solid #000';
+        } 
+        else if (currentMode === 'mosaic') {
+             if (mosaicType === 'pixel') brushCursor.style.borderRadius = '0%';
+             brushCursor.style.backgroundColor = 'rgba(0,0,0,0.1)';
+             brushCursor.style.border = '1px dashed #fff';
+        }
+        else if (currentMode === 'sticker' || currentMode === 'text') {
+             // For text/sticker, size is a bit abstract, show circle
+             // Text size logic in draw is size*3, so let's adjust preview
+             if(currentMode === 'text') displaySize *= 3;
+             brushCursor.style.width = `${displaySize}px`;
+             brushCursor.style.height = `${displaySize}px`;
+             brushCursor.style.backgroundColor = 'rgba(0,0,0,0.1)';
+             brushCursor.style.border = '1px dashed var(--accent-btn-bg)';
+        }
+        else if (currentMode === 'patch') {
+             brushCursor.style.backgroundColor = elColor.value;
+             brushCursor.style.opacity = '0.7';
+             if (patchShape === 'rect') brushCursor.style.borderRadius = '0%';
+        }
+        else if (currentMode === 'photo') {
+             // Photo preview is rectangular based on aspect ratio
+             if (customPhotoImg) {
+                 const aspect = customPhotoImg.naturalWidth / customPhotoImg.naturalHeight;
+                 const targetH = (displaySize * 2) / aspect; // width is size*2
+                 brushCursor.style.width = `${displaySize * 2}px`;
+                 brushCursor.style.height = `${targetH}px`;
+                 brushCursor.style.borderRadius = '0%';
+                 brushCursor.style.border = '1px dashed #fff';
+                 brushCursor.style.backgroundColor = 'rgba(255,255,255,0.3)';
+             } else {
+                 brushCursor.style.border = '1px dashed red'; // No photo alert
+             }
+        }
+
+        if (e) {
+            const rect = canvasWrapper.getBoundingClientRect();
+            if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+                 brushCursor.style.display = 'none';
+            } else {
+                 brushCursor.style.display = 'flex'; // Use flex to center content if any
+                 brushCursor.style.left = `${e.clientX - rect.left}px`;
+                 brushCursor.style.top = `${e.clientY - rect.top}px`;
+            }
+        }
+    }
+    
+    // Listener for cursor
+    canvasWrapper.addEventListener('mousemove', updateCursor);
+    canvasWrapper.addEventListener('mouseleave', () => { brushCursor.style.display = 'none'; });
+    elSize.addEventListener('input', () => { elSizeLabel.textContent = elSize.value; updateCursor(); });
+
+    // --- Double Tap Undo (Gesture) ---
+    canvasWrapper.addEventListener('touchend', (e) => {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+        if (tapLength < 300 && tapLength > 0) {
+            e.preventDefault();
+            if(history.length > 0) { history.pop(); redraw(); } // Trigger Undo
+        }
+        lastTap = currentTime;
+    });
+
+
+    // --- Redraw Logic ---
+    function redraw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.filter = isFilterOn ? 'grayscale(100%)' : 'none';
+        ctx.drawImage(originalImg, 0, 0, canvas.width, canvas.height);
+        ctx.filter = 'none';
+
+        const scaleX = canvas.width / originalImg.naturalWidth;
+        const scaleY = canvas.height / originalImg.naturalHeight;
+        
+        const drawCanvas = document.createElement('canvas');
+        drawCanvas.width = canvas.width; drawCanvas.height = canvas.height;
+        const dCtx = drawCanvas.getContext('2d');
+        dCtx.lineCap = 'round'; dCtx.lineJoin = 'round';
+
+        history.forEach(action => {
+            dCtx.globalCompositeOperation = 'source-over'; dCtx.globalAlpha = 1.0;
+            const ax = action.x * scaleX; const ay = action.y * scaleY; const as = action.size * scaleX;
+
+            if (action.type === 'path') {
+                dCtx.beginPath(); dCtx.lineWidth = as;
+
+                if (action.mode === 'eraser') dCtx.globalCompositeOperation = 'destination-out';
+                else if (action.mode === 'highlighter') {
+                    dCtx.globalCompositeOperation = 'multiply'; dCtx.globalAlpha = 0.3; dCtx.strokeStyle = action.color;
+                } else if (action.mode === 'mosaic') {
+                    // Logic below
+                } else { dCtx.strokeStyle = action.color; }
+
+                if (action.points.length > 0) {
+                    dCtx.moveTo(action.points[0].x * scaleX, action.points[0].y * scaleY);
+                    for (let i = 1; i < action.points.length; i++) {
+                        dCtx.lineTo(action.points[i].x * scaleX, action.points[i].y * scaleY);
+                    }
+                }
+                
+                if (action.mode === 'mosaic') {
+                    if (action.subType === 'pixel') {
+                        // Pixelate Effect: Draw squares along path
+                        dCtx.strokeStyle = 'rgba(0,0,0,1)'; // Masking
+                        dCtx.lineCap = 'butt'; // Blocky
+                        dCtx.globalCompositeOperation = 'source-over';
+                        // To simulate pixelate/censor without heavy processing, we use a blocky opaque stroke
+                        // or a pattern. Let's use a "Censor Bar" look (Black or Pixelated Noise).
+                        // For simplicity and "Reform" feel, let's make it a Black/Dark blocky line or
+                        // actually just a strong Blur but with square caps?
+                        // User asked for variety. Let's make 'Pixel' = Opaque Mosaic (Censor).
+                        // Actually, let's draw a pattern.
+                        dCtx.strokeStyle = '#000'; // Simple Censor
+                        // Or try to mimic pixelation by drawing rects? Too slow.
+                        // Let's stick to "Blur" vs "Blocky Blur" isn't enough diff.
+                        // Let's make "Pixel" = "Censor Bar" (Black Blocks)
+                        // No, users usually want "Pixelated Blur".
+                        // Implementation: Blur logic but with square lineCap?
+                        // Reverting to Blur logic for both but different strength/style?
+                        // Let's make 'Pixel' draw a solid black line (Censor).
+                        // Wait, 'Pixel' usually means 'Mosaic'.
+                        // Let's implement 'Pixel' as 'Heavy Blur' with 'butt' lineCap.
+                        dCtx.lineCap = 'butt'; // Square ends
+                        dCtx.save(); dCtx.stroke(); dCtx.clip();
+                        dCtx.filter = 'blur(15px)'; // Stronger blur
+                        dCtx.drawImage(originalImg, 0, 0, canvas.width, canvas.height); 
+                        dCtx.restore(); dCtx.filter = 'none';
+                    } else {
+                        // Standard Blur
+                        dCtx.save(); dCtx.stroke(); dCtx.clip();
+                        dCtx.filter = 'blur(5px)'; dCtx.drawImage(originalImg, 0, 0, canvas.width, canvas.height); 
+                        dCtx.restore(); dCtx.filter = 'none';
+                    }
+                } else {
+                    dCtx.stroke();
+                }
+
+            } else if (action.type === 'stamp') {
+                dCtx.font = `${as}px "Pretendard", "Apple Color Emoji", sans-serif`;
+                dCtx.textAlign = 'center'; dCtx.textBaseline = 'middle';
+                if (action.bgColor) {
+                    const metrics = dCtx.measureText(action.text);
+                    const tw = metrics.width; const p = as * 0.2;
+                    dCtx.fillStyle = action.bgColor;
+                    roundRect(dCtx, ax - tw/2 - p, ay - as/2 - p, tw + p*2, as + p*2, 8 * scaleX);
+                    dCtx.fill();
+                }
+                dCtx.fillStyle = action.color || '#000'; dCtx.fillText(action.text, ax, ay);
+            } else if (action.type === 'image') {
+                const imgW = action.width * scaleX; const imgH = action.height * scaleY;
+                dCtx.drawImage(action.img, ax - imgW/2, ay - imgH/2, imgW, imgH);
+            } else if (action.type === 'patch') {
+                dCtx.fillStyle = action.color; dCtx.beginPath();
+                if (action.shape === 'rect') dCtx.fillRect(ax - as/2, ay - as/2, as, as);
+                else { dCtx.arc(ax, ay, as/2, 0, Math.PI * 2); dCtx.fill(); }
+            }
         });
 
-        // --- Redraw Logic (Scale-Aware) ---
-        function redraw() {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(drawCanvas, 0, 0);
+        if (currentMode === 'crop' && cropStart && cropCurrent) drawCropOverlay();
+        reformBtn.disabled = !(history.length > 0 || isFilterOn);
+    }
+    
+    function drawCropOverlay() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        const x = Math.min(cropStart.x, cropCurrent.x); const y = Math.min(cropStart.y, cropCurrent.y);
+        const w = Math.abs(cropCurrent.x - cropStart.x); const h = Math.abs(cropCurrent.y - cropStart.y);
+        ctx.fillRect(0, 0, canvas.width, y); ctx.fillRect(0, y + h, canvas.width, canvas.height - (y + h));
+        ctx.fillRect(0, y, x, h); ctx.fillRect(x + w, y, canvas.width - (x + w), h);
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
+    }
+    function roundRect(ctx, x, y, w, h, r) {
+        if (w < 2 * r) r = w / 2; if (h < 2 * r) r = h / 2;
+        ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+    }
+    function getCoords(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: (clientX - rect.left) * (canvas.width / rect.width), y: (clientY - rect.top) * (canvas.height / rect.height) };
+    }
 
-          // 1. Draw Background
-          ctx.filter = isFilterOn ? "grayscale(100%)" : "none";
-          // Draw original image scaled to current canvas size
-          ctx.drawImage(originalImg, 0, 0, canvas.width, canvas.height);
-          ctx.filter = "none";
-
-          // 2. Layers
-          // History points are stored relative to *Original Natural Width*
-          // So we need to scale them to *Current Canvas Width*
-          const scaleX = canvas.width / originalImg.naturalWidth;
-          const scaleY = canvas.height / originalImg.naturalHeight;
-
-          // Use an offscreen canvas for drawing layers to handle blending correctly
-          const drawCanvas = document.createElement("canvas");
-          drawCanvas.width = canvas.width;
-          drawCanvas.height = canvas.height;
-          const dCtx = drawCanvas.getContext("2d");
-          dCtx.lineCap = "round";
-          dCtx.lineJoin = "round";
-
-          history.forEach((action) => {
-            dCtx.globalCompositeOperation = "source-over";
-            dCtx.globalAlpha = 1.0;
-
-            // Coordinates scaling
-            const ax = action.x * scaleX;
-            const ay = action.y * scaleY;
-            const as = action.size * scaleX; // Size also scales!
-
-            if (action.type === "path") {
-              dCtx.beginPath();
-              dCtx.lineWidth = as;
-
-              if (action.mode === "eraser")
-                dCtx.globalCompositeOperation = "destination-out";
-              else if (action.mode === "highlighter") {
-                dCtx.globalCompositeOperation = "multiply";
-                dCtx.globalAlpha = 0.3;
-                dCtx.strokeStyle = action.color;
-              } else if (action.mode === "mosaic") {
-                /* ... */
-              } else {
-                dCtx.strokeStyle = action.color;
-              }
-
-              if (action.points.length > 0) {
-                dCtx.moveTo(
-                  action.points[0].x * scaleX,
-                  action.points[0].y * scaleY
-                );
-                for (let i = 1; i < action.points.length; i++) {
-                  dCtx.lineTo(
-                    action.points[i].x * scaleX,
-                    action.points[i].y * scaleY
-                  );
-                }
-              }
-
-              if (action.mode === "mosaic") {
-                dCtx.save();
-                dCtx.stroke();
-                dCtx.clip();
-                dCtx.filter = "blur(5px)";
-                dCtx.drawImage(originalImg, 0, 0, canvas.width, canvas.height);
-                dCtx.restore();
-                dCtx.filter = "none";
-              } else {
-                dCtx.stroke();
-              }
-            } else if (action.type === "stamp") {
-              dCtx.font = `${as}px "Pretendard", "Apple Color Emoji", sans-serif`;
-              dCtx.textAlign = "center";
-              dCtx.textBaseline = "middle";
-              if (action.bgColor) {
-                const metrics = dCtx.measureText(action.text);
-                const tw = metrics.width;
-                const p = as * 0.2;
-                dCtx.fillStyle = action.bgColor;
-                roundRect(
-                  dCtx,
-                  ax - tw / 2 - p,
-                  ay - as / 2 - p,
-                  tw + p * 2,
-                  as + p * 2,
-                  8 * scaleX
-                );
-                dCtx.fill();
-              }
-              dCtx.fillStyle = action.color || "#000";
-              dCtx.fillText(action.text, ax, ay);
-            } else if (action.type === "image") {
-              const imgW = action.width * scaleX;
-              const imgH = action.height * scaleY;
-              dCtx.drawImage(
-                action.img,
-                ax - imgW / 2,
-                ay - imgH / 2,
-                imgW,
-                imgH
-              );
-            } else if (action.type === "patch") {
-              dCtx.fillStyle = action.color;
-              dCtx.beginPath();
-              if (action.shape === "rect")
-                dCtx.fillRect(ax - as / 2, ay - as / 2, as, as);
-              else {
-                dCtx.arc(ax, ay, as / 2, 0, Math.PI * 2);
-                dCtx.fill();
-              }
-            }
-          });
-
-          ctx.drawImage(drawCanvas, 0, 0);
-
-          if (currentMode === "crop" && cropStart && cropCurrent)
-            drawCropOverlay();
-          reformBtn.disabled = !(history.length > 0 || isFilterOn);
-        }
-
-        function drawCropOverlay() {
-          ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-          // Coordinates for crop are in Canvas pixels.
-          // Logic remains same as they are transient.
-          const x = Math.min(cropStart.x, cropCurrent.x);
-          const y = Math.min(cropStart.y, cropCurrent.y);
-          const w = Math.abs(cropCurrent.x - cropStart.x);
-          const h = Math.abs(cropCurrent.y - cropStart.y);
-
-          ctx.fillRect(0, 0, canvas.width, y);
-          ctx.fillRect(0, y + h, canvas.width, canvas.height - (y + h));
-          ctx.fillRect(0, y, x, h);
-          ctx.fillRect(x + w, y, canvas.width - (x + w), h);
-          ctx.strokeStyle = "#fff";
-          ctx.lineWidth = 2;
-          ctx.strokeRect(x, y, w, h);
-        }
-
-        function roundRect(ctx, x, y, w, h, r) {
-          if (w < 2 * r) r = w / 2;
-          if (h < 2 * r) r = h / 2;
-          ctx.beginPath();
-          ctx.moveTo(x + r, y);
-          ctx.arcTo(x + w, y, x + w, y + h, r);
-          ctx.arcTo(x + w, y + h, x, y + h, r);
-          ctx.arcTo(x, y + h, x, y, r);
-          ctx.arcTo(x, y, x + w, y, r);
-          ctx.closePath();
-        }
-
-        // --- Interaction ---
-        function getCoords(e) {
-          const rect = canvas.getBoundingClientRect();
-          const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-          const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-          return {
-            x: (clientX - rect.left) * (canvas.width / rect.width),
-            y: (clientY - rect.top) * (canvas.height / rect.height),
-          };
-        }
-
-        const startDraw = (e) => {
-          const { x, y } = getCoords(e);
-          if (currentMode === "crop") {
-            isCropping = true;
-            cropStart = { x, y };
-            cropCurrent = { x, y };
-            redraw();
-            return;
-          }
-
-          const isPathTool = [
-            "pen",
-            "highlighter",
-            "eraser",
-            "mosaic",
-          ].includes(currentMode);
-          if (isPathTool) {
+    const startDraw = (e) => {
+        const { x, y } = getCoords(e);
+        if (currentMode === 'crop') { isCropping = true; cropStart = { x, y }; cropCurrent = { x, y }; redraw(); return; }
+        const isPathTool = ['pen', 'highlighter', 'eraser', 'mosaic'].includes(currentMode);
+        if (isPathTool) {
             isDrawing = true;
-            // Store points in Original Scale!
-            // Convert Canvas coords -> Original Coords
             const scaleX = originalImg.naturalWidth / canvas.width;
             const scaleY = originalImg.naturalHeight / canvas.height;
-            currentPath = [{ x: x * scaleX, y: y * scaleY }];
+            currentPath = [{x: x * scaleX, y: y * scaleY}];
+        }
+    };
 
-            // Preview Dot (Draw directly on canvas)
-            if (currentMode !== "mosaic") {
-              ctx.beginPath();
-              if (currentMode === "eraser") {
-                ctx.fillStyle = "#ffffff";
-                ctx.strokeStyle = "#000";
-                ctx.lineWidth = 1;
-              } else {
-                ctx.fillStyle = elColor.value;
-              }
-              if (currentMode !== "highlighter") {
-                ctx.arc(x, y, elSize.value / 2, 0, Math.PI * 2);
-                ctx.fill();
-                if (currentMode === "eraser") ctx.stroke();
-              }
-            }
-          }
-        };
+    const moveDraw = (e) => {
+        const { x, y } = getCoords(e);
+        if (currentMode === 'crop' && isCropping) { e.preventDefault(); cropCurrent = { x, y }; redraw(); return; }
+        const isPathTool = ['pen', 'highlighter', 'eraser', 'mosaic'].includes(currentMode);
+        if (!isDrawing || !isPathTool) return;
+        e.preventDefault();
+        const scaleX = originalImg.naturalWidth / canvas.width; const scaleY = originalImg.naturalHeight / canvas.height;
+        currentPath.push({x: x * scaleX, y: y * scaleY});
+        
+        ctx.beginPath(); ctx.lineCap = (currentMode === 'mosaic' && mosaicType === 'pixel') ? 'butt' : 'round'; 
+        ctx.lineJoin = 'round'; ctx.lineWidth = elSize.value;
 
-        const moveDraw = (e) => {
-          const { x, y } = getCoords(e);
-          if (currentMode === "crop" && isCropping) {
-            e.preventDefault();
-            cropCurrent = { x, y };
-            redraw();
-            return;
-          }
+        if (currentMode === 'eraser') { ctx.globalCompositeOperation = 'destination-out'; ctx.strokeStyle = 'rgba(0,0,0,1)'; }
+        else if (currentMode === 'mosaic') { ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = 'rgba(100,100,100,0.1)'; }
+        else if (currentMode === 'highlighter') { ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = 0.3; ctx.strokeStyle = elColor.value; }
+        else { ctx.globalCompositeOperation = 'source-over'; ctx.strokeStyle = elColor.value; }
+        
+        const prevP = currentPath[currentPath.length-2];
+        ctx.moveTo(prevP.x / scaleX, prevP.y / scaleY); ctx.lineTo(x, y); ctx.stroke();
+        ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1.0;
+    };
 
-          const isPathTool = [
-            "pen",
-            "highlighter",
-            "eraser",
-            "mosaic",
-          ].includes(currentMode);
-          if (!isDrawing || !isPathTool) return;
-          e.preventDefault();
-
-          // Save to path (Original Scale)
-          const scaleX = originalImg.naturalWidth / canvas.width;
-          const scaleY = originalImg.naturalHeight / canvas.height;
-          currentPath.push({ x: x * scaleX, y: y * scaleY });
-
-          // Real-time Visual (Canvas Scale)
-          // Just draw the last segment to avoid full redraw lag
-          ctx.beginPath();
-          ctx.lineCap = "round";
-          ctx.lineJoin = "round";
-          ctx.lineWidth = elSize.value;
-
-          if (currentMode === "eraser") {
-            ctx.globalCompositeOperation = "destination-out";
-            ctx.strokeStyle = "rgba(0,0,0,1)";
-          } else if (currentMode === "mosaic") {
-            ctx.globalCompositeOperation = "source-over";
-            ctx.strokeStyle = "rgba(100,100,100,0.1)";
-          } else if (currentMode === "highlighter") {
-            ctx.globalCompositeOperation = "multiply";
-            ctx.globalAlpha = 0.3;
-            ctx.strokeStyle = elColor.value;
-          } else {
-            ctx.globalCompositeOperation = "source-over";
-            ctx.strokeStyle = elColor.value;
-          }
-
-          // To draw line, we need previous point in Canvas scale
-          // Previous point in path is in Original Scale
-          const prevP = currentPath[currentPath.length - 2];
-          const prevCanvasX = prevP.x / scaleX;
-          const prevCanvasY = prevP.y / scaleY;
-
-          ctx.moveTo(prevCanvasX, prevCanvasY);
-          ctx.lineTo(x, y);
-          ctx.stroke();
-
-          ctx.globalCompositeOperation = "source-over";
-          ctx.globalAlpha = 1.0;
-        };
-
-        const endDraw = (e) => {
-          if (currentMode === "crop") {
-            isCropping = false;
-            return;
-          }
-          const isPathTool = [
-            "pen",
-            "highlighter",
-            "eraser",
-            "mosaic",
-          ].includes(currentMode);
-
-          // Scale factors for stamps
-          const scaleX = originalImg.naturalWidth / canvas.width;
-          const scaleY = originalImg.naturalHeight / canvas.height;
-
-          if (isPathTool && isDrawing) {
+    const endDraw = (e) => {
+        if (currentMode === 'crop') { isCropping = false; return; }
+        const isPathTool = ['pen', 'highlighter', 'eraser', 'mosaic'].includes(currentMode);
+        const scaleX = originalImg.naturalWidth / canvas.width;
+        if (isPathTool && isDrawing) {
             isDrawing = false;
             history.push({
-              type: "path",
-              mode: currentMode,
-              color: elColor.value,
-              size: parseInt(elSize.value) * scaleX, // Store size relative to original width!
-              points: currentPath,
+                type: 'path', mode: currentMode, subType: mosaicType, color: elColor.value,
+                size: parseInt(elSize.value) * scaleX, points: currentPath
             });
             redraw();
-          } else if (!isPathTool) {
+        } else if (!isPathTool) {
+            // ... (Stamp logic same as before, scaling applied)
             const { x, y } = getCoords(e);
             let size = parseInt(elSize.value);
-
-            if (currentMode === "sticker") {
-              history.push({
-                type: "stamp",
-                text: elStickerInput.value || "😺",
-                x: x * scaleX,
-                y: y * scaleY,
-                size: size * scaleX,
-              });
-            } else if (currentMode === "patch") {
-              history.push({
-                type: "patch",
-                shape: patchShape,
-                color: elColor.value,
-                x: x * scaleX,
-                y: y * scaleY,
-                size: size * scaleX,
-              });
-            } else if (currentMode === "text") {
-              history.push({
-                type: "stamp",
-                text: elTextInput.value || "텍스트",
-                x: x * scaleX,
-                y: y * scaleY,
-                size: size * 3 * scaleX,
-                color: elColor.value,
-                bgColor: elBgCheck.checked ? elBgColor.value : null,
-              });
-            } else if (currentMode === "photo") {
-              if (!customPhotoImg) {
-                alert("먼저 [🔄 사진 교체] 버튼을 눌러 사진을 선택해주세요.");
-                layerInput.click();
-                return;
-              }
-              const aspect =
-                customPhotoImg.naturalWidth / customPhotoImg.naturalHeight;
-              const targetWidth = size * 2;
-              const targetHeight = targetWidth / aspect;
-              history.push({
-                type: "image",
-                img: customPhotoImg,
-                x: x * scaleX,
-                y: y * scaleY,
-                width: targetWidth * scaleX,
-                height: targetHeight * scaleX,
-              });
+            const scaleY = originalImg.naturalHeight / canvas.height;
+            if (currentMode === 'sticker') history.push({ type: 'stamp', text: elStickerInput.value || '😺', x: x*scaleX, y: y*scaleY, size: size*scaleX });
+            else if (currentMode === 'patch') history.push({ type: 'patch', shape: patchShape, color: elColor.value, x: x*scaleX, y: y*scaleY, size: size*scaleX });
+            else if (currentMode === 'text') history.push({ type: 'stamp', text: elTextInput.value || '텍스트', x: x*scaleX, y: y*scaleY, size: (size*3)*scaleX, color: elColor.value, bgColor: elBgCheck.checked ? elBgColor.value : null });
+            else if (currentMode === 'photo') {
+                if (!customPhotoImg) { alert("사진을 선택해주세요."); layerInput.click(); return; }
+                const aspect = customPhotoImg.naturalWidth / customPhotoImg.naturalHeight;
+                history.push({ type: 'image', img: customPhotoImg, x: x*scaleX, y: y*scaleY, width: size*2*scaleX, height: (size*2/aspect)*scaleX });
             }
             redraw();
-          }
-        };
-
-        canvas.addEventListener("mousedown", startDraw);
-        canvas.addEventListener("mousemove", moveDraw);
-        canvas.addEventListener("mouseup", endDraw);
-        canvas.addEventListener("touchstart", startDraw, { passive: false });
-        canvas.addEventListener("touchmove", moveDraw, { passive: false });
-        canvas.addEventListener("touchend", endDraw);
-
-        // --- Crop Action ---
-        btnApplyCrop.addEventListener("click", () => {
-          if (!cropStart || !cropCurrent)
-            return alert("자를 영역을 선택해주세요.");
-          const x = Math.min(cropStart.x, cropCurrent.x);
-          const y = Math.min(cropStart.y, cropCurrent.y);
-          const w = Math.abs(cropCurrent.x - cropStart.x);
-          const h = Math.abs(cropCurrent.y - cropStart.y);
-          if (w < 10 || h < 10) return alert("영역이 너무 작습니다.");
-          if (
-            !confirm(
-              "자르기를 적용하면 기존 편집 내역이 초기화됩니다. 진행할까요?"
-            )
-          )
-            return;
-
-          // Apply Crop on CURRENT canvas state
-          const tempCanvas = document.createElement("canvas");
-          tempCanvas.width = w;
-          tempCanvas.height = h;
-          const tCtx = tempCanvas.getContext("2d");
-
-          // We crop from the *Current Canvas View* (filtered + original)
-          // Note: Filters are applied in redraw(), so we can just grab from main canvas?
-          // No, main canvas has overlays. We need to render the base image filtered + cropped.
-          tCtx.filter = isFilterOn ? "grayscale(100%)" : "none";
-
-          // Since originalImg is full size, and crop coords are in Canvas coords,
-          // we need to map crop coords to Original Image coords.
-          const scaleX = originalImg.naturalWidth / canvas.width;
-          const scaleY = originalImg.naturalHeight / canvas.height;
-
-          tCtx.drawImage(
-            originalImg,
-            x * scaleX,
-            y * scaleY,
-            w * scaleX,
-            h * scaleY,
-            0,
-            0,
-            w,
-            h
-          );
-
-          const newImg = new Image();
-          newImg.onload = () => {
-            originalImg = newImg;
-            widthInput.value = w; // Size is reset to the cropped pixel size
-            heightInput.value = h;
-            history = [];
-            cropStart = null;
-            cropCurrent = null;
-            isFilterOn = false;
-            tools.filter.classList.remove("active");
-            setMode("pen");
-            // Re-init with new natural size
-            initCanvas(w, h);
-            updateUI();
-          };
-          newImg.src = tempCanvas.toDataURL();
-        });
-
-        btnCancelCrop.addEventListener("click", () => {
-          setMode("pen");
-          redraw();
-        });
-
-        // --- Toolbar UI Logic ---
-        function setMode(mode) {
-          if (mode === "filter") {
-            isFilterOn = !isFilterOn;
-            tools.filter.classList.toggle("active", isFilterOn);
-            redraw();
-            return;
-          }
-          currentMode = mode;
-          Object.values(tools).forEach((btn) => {
-            if (btn !== tools.filter) btn.classList.remove("active");
-          });
-          if (tools[mode]) tools[mode].classList.add("active");
-          cropPanel.classList.toggle("active", mode === "crop");
-
-          // Options
-          toolOptions.innerHTML = "";
-          const crosshairTools = ["pen", "highlighter", "eraser", "mosaic"];
-          if (crosshairTools.includes(mode)) {
-            canvas.style.cursor = "crosshair";
-            if (mode !== "eraser" && mode !== "mosaic")
-              toolOptions.appendChild(elColor);
-            toolOptions.appendChild(elSize);
-            toolOptions.appendChild(elSizeLabel);
-          } else {
-            canvas.style.cursor = "copy";
-          }
-
-          if (mode === "sticker") {
-            toolOptions.appendChild(elStickerInput);
-            toolOptions.appendChild(elSize);
-            toolOptions.appendChild(elSizeLabel);
-          } else if (mode === "patch") {
-            toolOptions.appendChild(elPatchRect);
-            toolOptions.appendChild(elPatchCircle);
-            toolOptions.appendChild(elColor);
-            toolOptions.appendChild(elSize);
-            toolOptions.appendChild(elSizeLabel);
-          } else if (mode === "text") {
-            toolOptions.appendChild(elTextInput);
-            toolOptions.appendChild(elColor);
-            toolOptions.appendChild(elSize);
-            toolOptions.appendChild(elSizeLabel);
-            toolOptions.appendChild(lblBg);
-            toolOptions.appendChild(elBgColor);
-          } else if (mode === "photo") {
-            toolOptions.appendChild(elChangePhoto);
-            toolOptions.appendChild(elSize);
-            toolOptions.appendChild(elSizeLabel);
-          }
-
-          if (mode !== "crop") redraw();
         }
+    };
 
-        Object.keys(tools).forEach((key) =>
-          tools[key].addEventListener("click", () => setMode(key))
-        );
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', moveDraw);
+    canvas.addEventListener('mouseup', endDraw);
+    canvas.addEventListener('touchstart', startDraw, {passive: false});
+    canvas.addEventListener('touchmove', moveDraw, {passive: false});
+    canvas.addEventListener('touchend', endDraw);
 
-        elBgCheck.addEventListener("change", () => {
-          elBgColor.disabled = !elBgCheck.checked;
-        });
-        elPatchRect.addEventListener("click", () => {
-          patchShape = "rect";
-          elPatchRect.classList.add("active");
-          elPatchCircle.classList.remove("active");
-        });
-        elPatchCircle.addEventListener("click", () => {
-          patchShape = "circle";
-          elPatchCircle.classList.add("active");
-          elPatchRect.classList.remove("active");
-        });
-        elChangePhoto.addEventListener("click", () => {
-          layerInput.click();
-        });
+    // Crop ...
+    btnApplyCrop.addEventListener('click', () => {
+        if (!cropStart || !cropCurrent) return alert('자를 영역을 선택해주세요.');
+        const x = Math.min(cropStart.x, cropCurrent.x); const y = Math.min(cropStart.y, cropCurrent.y);
+        const w = Math.abs(cropCurrent.x - cropStart.x); const h = Math.abs(cropCurrent.y - cropStart.y);
+        if (w < 10 || h < 10) return alert('영역이 너무 작습니다.');
+        if(!confirm('자르기를 적용하면 기존 편집 내역이 초기화됩니다.')) return;
+        const tempCanvas = document.createElement('canvas'); tempCanvas.width = w; tempCanvas.height = h;
+        const tCtx = tempCanvas.getContext('2d');
+        tCtx.filter = isFilterOn ? 'grayscale(100%)' : 'none';
+        const scaleX = originalImg.naturalWidth / canvas.width; const scaleY = originalImg.naturalHeight / canvas.height;
+        tCtx.drawImage(originalImg, x*scaleX, y*scaleY, w*scaleX, h*scaleY, 0, 0, w, h);
+        const newImg = new Image();
+        newImg.onload = () => {
+            originalImg = newImg; widthInput.value = w; heightInput.value = h;
+            history = []; cropStart = null; cropCurrent = null; isFilterOn = false; tools.filter.classList.remove('active');
+            setMode('pen'); initCanvas(w, h); updateUI();
+        }; newImg.src = tempCanvas.toDataURL();
+    });
+    btnCancelCrop.addEventListener('click', () => { setMode('pen'); redraw(); });
 
-        // Size Indicator Update
-        elSize.addEventListener("input", () => {
-          elSizeLabel.textContent = elSize.value;
-        });
+    // Mode Setting & Options
+    function setMode(mode) {
+        if (mode === 'filter') { isFilterOn = !isFilterOn; tools.filter.classList.toggle('active', isFilterOn); redraw(); return; }
+        currentMode = mode;
+        Object.values(tools).forEach(btn => { if(btn !== tools.filter) btn.classList.remove('active'); });
+        if(tools[mode]) tools[mode].classList.add('active');
+        cropPanel.classList.toggle('active', mode === 'crop');
+        
+        toolOptions.innerHTML = '';
+        const crosshairTools = ['pen', 'highlighter', 'eraser', 'mosaic'];
+        if(crosshairTools.includes(mode)) {
+            // canvas.style.cursor handled by #canvas-wrapper css (none)
+            if(mode !== 'eraser' && mode !== 'mosaic') toolOptions.appendChild(elColor);
+            if(mode === 'mosaic') { toolOptions.appendChild(elMosaicBlur); toolOptions.appendChild(elMosaicPixel); }
+            toolOptions.appendChild(elSize); toolOptions.appendChild(elSizeLabel);
+        }
+        if (mode === 'sticker') { toolOptions.appendChild(elStickerInput); toolOptions.appendChild(elSize); toolOptions.appendChild(elSizeLabel); }
+        else if (mode === 'patch') { toolOptions.appendChild(elPatchRect); toolOptions.appendChild(elPatchCircle); toolOptions.appendChild(elColor); toolOptions.appendChild(elSize); toolOptions.appendChild(elSizeLabel); }
+        else if (mode === 'text') { toolOptions.appendChild(elTextInput); toolOptions.appendChild(elColor); toolOptions.appendChild(elSize); toolOptions.appendChild(elSizeLabel); toolOptions.appendChild(lblBg); toolOptions.appendChild(elBgColor); }
+        else if (mode === 'photo') { toolOptions.appendChild(elChangePhoto); toolOptions.appendChild(elSize); toolOptions.appendChild(elSizeLabel); }
+        
+        if (mode !== 'crop') redraw();
+    }
+    
+    Object.keys(tools).forEach(key => tools[key].addEventListener('click', () => setMode(key)));
+    elBgCheck.addEventListener('change', () => { elBgColor.disabled = !elBgCheck.checked; });
+    elPatchRect.addEventListener('click', () => { patchShape = 'rect'; elPatchRect.classList.add('active'); elPatchCircle.classList.remove('active'); });
+    elPatchCircle.addEventListener('click', () => { patchShape = 'circle'; elPatchCircle.classList.add('active'); elPatchRect.classList.remove('active'); });
+    elMosaicBlur.addEventListener('click', () => { mosaicType = 'blur'; elMosaicBlur.classList.add('active'); elMosaicPixel.classList.remove('active'); });
+    elMosaicPixel.addEventListener('click', () => { mosaicType = 'pixel'; elMosaicPixel.classList.add('active'); elMosaicBlur.classList.remove('active'); });
+    elChangePhoto.addEventListener('click', () => { layerInput.click(); });
+    elSize.addEventListener('input', () => { elSizeLabel.textContent = elSize.value; updateCursor(); });
 
-        layerInput.addEventListener("change", (e) => {
-          handleLayerFile(e.target.files[0]);
-          e.target.value = "";
-        });
-        btnUndo.addEventListener("click", () => {
-          if (history.length > 0) {
-            history.pop();
-            redraw();
-          }
-        });
-        btnReset.addEventListener("click", () => {
-          if (confirm("초기화하시겠습니까?")) {
-            history = [];
-            isFilterOn = false;
-            tools.filter.classList.remove("active");
-            redraw();
-          }
-        });
-
-        reformBtn.addEventListener("click", () => {
-          if (!originalImg) return;
-          // Save using current canvas size (User WYSIWYG)
-          // [수정] iOS 대응 - BLOB URL을 새 창으로 띄우기
-          canvas.toBlob(
-            (blob) => {
-              const url = URL.createObjectURL(blob);
-
-              // iOS Safari 체크 (UserAgent)
-              const isIOS =
-                /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-                !window.MSStream;
-
-              if (isIOS) {
-                // iOS: 새 탭 열기 (팝업 차단 주의 안내 필요할 수도 있음)
-                alert(
-                  "이미지가 새 창에서 열립니다.\n이미지를 길게 눌러 '사진 앱에 저장'하세요."
-                );
-                window.open(url, "_blank");
-              } else {
-                // PC/Android: 다운로드 트리거
-                const link = document.createElement("a");
-                link.download = `reform_${Date.now()}.jpg`;
-                link.href = url;
-                link.click();
-              }
-            },
-            "image/jpeg",
-            0.95
-          );
-        });
-
-        document
-          .getElementById("change-image-btn")
-          .addEventListener("click", () => fileInput.click());
-        uploadBox.addEventListener("click", () => fileInput.click());
-        fileInput.addEventListener("change", (e) => {
-          handleFile(e.target.files[0]);
-          e.target.value = "";
-        });
-        ["dragenter", "dragover", "dragleave", "drop"].forEach((eName) => {
-          uploadBox.addEventListener(eName, (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-          });
-        });
-        uploadBox.addEventListener("dragenter", () =>
-          uploadBox.classList.add("dragover")
-        );
-        uploadBox.addEventListener("dragleave", () =>
-          uploadBox.classList.remove("dragover")
-        );
-        uploadBox.addEventListener("drop", (e) => {
-          uploadBox.classList.remove("dragover");
-          handleFile(e.dataTransfer.files[0]);
-        });
-
-        updateUI = () => {
-          reformBtn.disabled = true;
-        };
-      });
-    </script>
-  </body>
+    layerInput.addEventListener('change', e => { handleLayerFile(e.target.files[0]); e.target.value = ''; });
+    btnUndo.addEventListener('click', () => { if(history.length > 0) { history.pop(); redraw(); } });
+    btnReset.addEventListener('click', () => { if(confirm("초기화?")) { history = []; isFilterOn = false; tools.filter.classList.remove('active'); redraw(); } });
+    reformBtn.addEventListener('click', () => {
+        if (!originalImg) return;
+        canvas.toBlob(blob => {
+            const url = URL.createObjectURL(blob);
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isIOS) { alert("이미지 길게 눌러 저장하세요."); window.open(url, '_blank'); }
+            else { const link = document.createElement('a'); link.download = `reform_${Date.now()}.jpg`; link.href = url; link.click(); }
+        }, 'image/jpeg', 0.95);
+    });
+    
+    document.getElementById('change-image-btn').addEventListener('click', () => fileInput.click());
+    uploadBox.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', e => { handleFile(e.target.files[0]); e.target.value = ''; });
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eName => { uploadBox.addEventListener(eName, e => { e.preventDefault(); e.stopPropagation(); }); });
+    uploadBox.addEventListener('dragenter', () => uploadBox.classList.add('dragover'));
+    uploadBox.addEventListener('dragleave', () => uploadBox.classList.remove('dragover'));
+    uploadBox.addEventListener('drop', e => { uploadBox.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
+    updateUI = () => { reformBtn.disabled = true; };
+});
+</script>
+</body>
 </html>
