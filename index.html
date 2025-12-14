@@ -1216,13 +1216,29 @@
         reformBtn.addEventListener("click", () => {
           if (!originalImg) return;
           // Save using current canvas size (User WYSIWYG)
-          const link = document.createElement("a");
-          link.download = `reform_${Date.now()}.jpg`;
-          // Use highest quality
+          // [수정] iOS 대응 - BLOB URL을 새 창으로 띄우기
           canvas.toBlob(
             (blob) => {
-              link.href = URL.createObjectURL(blob);
-              link.click();
+              const url = URL.createObjectURL(blob);
+
+              // iOS Safari 체크 (UserAgent)
+              const isIOS =
+                /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+                !window.MSStream;
+
+              if (isIOS) {
+                // iOS: 새 탭 열기 (팝업 차단 주의 안내 필요할 수도 있음)
+                alert(
+                  "이미지가 새 창에서 열립니다.\n이미지를 길게 눌러 '사진 앱에 저장'하세요."
+                );
+                window.open(url, "_blank");
+              } else {
+                // PC/Android: 다운로드 트리거
+                const link = document.createElement("a");
+                link.download = `reform_${Date.now()}.jpg`;
+                link.href = url;
+                link.click();
+              }
             },
             "image/jpeg",
             0.95
