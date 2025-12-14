@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <title>👔 짧은 그림 리폼실</title>
 
-    <!-- [iOS PWA 설정] 독립적인 앱처럼 실행 -->
+    <!-- [iOS PWA 설정] -->
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
@@ -19,7 +19,6 @@
       rel="apple-touch-icon"
       href="https://toastout.github.io/toast/icon.png"
     />
-    <!-- (참고: 실제 아이콘 이미지가 없다면 기본 스크린샷이 사용됩니다) -->
 
     <style>
       :root {
@@ -46,10 +45,9 @@
         --tool-active-color: #e7f5ff;
       }
 
-      /* [iOS 최적화] 더블 탭 확대 방지 및 터치 반응 개선 */
       * {
-        touch-action: manipulation; /* 브라우저 줌 제스처 대기 시간 제거 */
-        -webkit-tap-highlight-color: transparent; /* 터치 시 회색 박스 제거 */
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
       }
 
       body {
@@ -64,13 +62,12 @@
         align-items: flex-start;
         min-height: 100vh;
         box-sizing: border-box;
-        overscroll-behavior: none; /* 당겨서 새로고침 방지 */
-        -webkit-user-select: none; /* 텍스트 선택 방지 (메뉴 팝업 차단) */
+        overscroll-behavior: none;
+        -webkit-user-select: none;
         user-select: none;
-        padding-top: env(safe-area-inset-top); /* 노치 영역 대응 */
+        padding-top: env(safe-area-inset-top);
       }
 
-      /* 입력창은 텍스트 선택 가능해야 함 */
       input[type="text"],
       input[type="number"] {
         -webkit-user-select: text;
@@ -129,7 +126,7 @@
         border-radius: 8px;
         overflow: hidden;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        touch-action: none; /* 캔버스 내 스크롤/줌 완전 차단 */
+        touch-action: none;
         max-width: 100%;
       }
       canvas {
@@ -202,6 +199,14 @@
         flex-wrap: wrap;
       }
 
+      .size-indicator {
+        font-size: 0.8rem;
+        color: var(--text-color);
+        min-width: 30px;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+      }
+
       input[type="color"] {
         width: 30px;
         height: 30px;
@@ -250,13 +255,39 @@
         display: flex;
       }
 
-      /* 하단 버튼 */
+      /* 하단 버튼 및 리사이즈 컨트롤 */
       .action-panel {
         display: flex;
         flex-direction: column;
         gap: 15px;
         margin-top: 20px;
       }
+
+      .resize-controls {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        font-size: 0.9rem;
+        background: var(--btn-bg);
+        padding: 10px;
+        border-radius: 8px;
+      }
+      .resize-btns {
+        display: flex;
+        gap: 5px;
+      }
+      .resize-btns button {
+        padding: 4px 8px;
+        font-size: 0.8rem;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background: var(--section-bg);
+        cursor: pointer;
+        color: var(--text-color);
+      }
+
       .download-buttons {
         display: flex;
         gap: 10px;
@@ -438,15 +469,8 @@
         </div>
 
         <div class="action-panel">
-          <div
-            style="
-              display: flex;
-              gap: 10px;
-              align-items: center;
-              justify-content: center;
-              font-size: 0.9rem;
-            "
-          >
+          <!-- 실시간 리사이징 컨트롤 -->
+          <div class="resize-controls">
             <label>출력 크기:</label>
             <input
               type="number"
@@ -462,6 +486,11 @@
               style="width: 70px; padding: 5px; text-align: center"
               readonly
             />
+            <div class="resize-btns">
+              <button data-percent="0.5">50%</button>
+              <button data-percent="0.75">75%</button>
+              <button data-percent="1.0">100%</button>
+            </div>
           </div>
 
           <div class="download-buttons">
@@ -475,7 +504,7 @@
 
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        // [iOS 최적화] 더블 탭 확대 방지 (이벤트 리스너)
+        // [iOS 최적화]
         document.addEventListener(
           "dblclick",
           function (event) {
@@ -494,6 +523,7 @@
         const widthInput = document.getElementById("img-width");
         const heightInput = document.getElementById("img-height");
         const reformBtn = document.getElementById("reform-btn");
+        const resizeBtns = document.querySelectorAll(".resize-btns button");
 
         // Tools Buttons
         const tools = {
@@ -509,7 +539,7 @@
           filter: document.getElementById("tool-filter"),
         };
 
-        // Option Container
+        // UI Panels
         const toolOptions = document.getElementById("tool-options");
         const cropPanel = document.getElementById("crop-panel");
         const btnUndo = document.getElementById("btn-undo");
@@ -517,7 +547,7 @@
         const btnApplyCrop = document.getElementById("btn-apply-crop");
         const btnCancelCrop = document.getElementById("btn-cancel-crop");
 
-        // Reusable Option Elements (Created once, appended as needed)
+        // Options UI
         const elColor = document.createElement("input");
         elColor.type = "color";
         elColor.value = "#000000";
@@ -526,6 +556,9 @@
         elSize.min = 1;
         elSize.max = 100;
         elSize.value = 10;
+        const elSizeLabel = document.createElement("span");
+        elSizeLabel.className = "size-indicator";
+        elSizeLabel.textContent = "10"; // 사이즈 표기
         const elTextInput = document.createElement("input");
         elTextInput.type = "text";
         elTextInput.placeholder = "내용";
@@ -548,8 +581,6 @@
         const elChangePhoto = document.createElement("button");
         elChangePhoto.className = "tool-btn small-btn";
         elChangePhoto.textContent = "🔄 사진 교체";
-
-        // Labels & Wrappers
         const lblBg = document.createElement("label");
         lblBg.className = "checkbox-label";
         lblBg.appendChild(elBgCheck);
@@ -563,14 +594,13 @@
         let isDrawing = false;
         let currentPath = [];
         let patchShape = "rect";
-        let isFilterOn = false; // Simple Boolean Toggle
+        let isFilterOn = false;
 
-        // Crop State
         let isCropping = false;
         let cropStart = null;
         let cropCurrent = null;
 
-        // --- Core Functions ---
+        // --- Functions ---
 
         function handleFile(file) {
           if (!file || !file.type.startsWith("image/"))
@@ -583,11 +613,15 @@
               history = [];
               isFilterOn = false;
               tools.filter.classList.remove("active");
-              initCanvas();
-              uploadBox.style.display = "none";
-              workspace.style.display = "block";
+
+              // 초기값: 원본 크기
               widthInput.value = img.naturalWidth;
               heightInput.value = img.naturalHeight;
+
+              initCanvas(img.naturalWidth, img.naturalHeight);
+
+              uploadBox.style.display = "none";
+              workspace.style.display = "block";
               updateUI();
             };
             img.src = e.target.result;
@@ -611,38 +645,72 @@
           reader.readAsDataURL(file);
         }
 
-        function initCanvas() {
+        // Canvas Resizing Logic (Live)
+        function initCanvas(w, h) {
           if (!originalImg) return;
-          canvas.width = originalImg.naturalWidth;
-          canvas.height = originalImg.naturalHeight;
 
+          canvas.width = w;
+          canvas.height = h;
+
+          // CSS Display size (responsive)
           const wrapper = document.getElementById("canvas-wrapper");
-          const maxWidth = Math.min(600, window.innerWidth - 50); // 모바일 여백 고려
-          let displayWidth = originalImg.naturalWidth;
-          let displayHeight = originalImg.naturalHeight;
+          const maxWidth = Math.min(600, window.innerWidth - 50);
+          let displayWidth = w;
+          let displayHeight = h;
 
           if (displayWidth > maxWidth) {
-            const scale = maxWidth / displayWidth;
+            const ratio = maxWidth / displayWidth;
             displayWidth = maxWidth;
-            displayHeight = displayHeight * scale;
+            displayHeight = h * ratio;
           }
-
           canvas.style.width = `${displayWidth}px`;
           canvas.style.height = `${displayHeight}px`;
+
           redraw();
         }
 
-        // --- Redraw Logic ---
+        // Live Resize Event
+        function updateCanvasSize() {
+          if (!originalImg) return;
+          let newW = parseInt(widthInput.value);
+          if (!newW || newW < 1) newW = 100;
+
+          // Aspect ratio maintained
+          const ratio = originalImg.naturalHeight / originalImg.naturalWidth;
+          const newH = Math.round(newW * ratio);
+          heightInput.value = newH;
+
+          initCanvas(newW, newH);
+        }
+
+        widthInput.addEventListener("input", updateCanvasSize);
+
+        resizeBtns.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            if (!originalImg) return;
+            const percent = parseFloat(btn.dataset.percent);
+            widthInput.value = Math.round(originalImg.naturalWidth * percent);
+            updateCanvasSize();
+          });
+        });
+
+        // --- Redraw Logic (Scale-Aware) ---
         function redraw() {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          // 1. Background (Filter)
+          // 1. Draw Background
           ctx.filter = isFilterOn ? "grayscale(100%)" : "none";
-          if (originalImg) ctx.drawImage(originalImg, 0, 0);
+          // Draw original image scaled to current canvas size
+          ctx.drawImage(originalImg, 0, 0, canvas.width, canvas.height);
           ctx.filter = "none";
 
           // 2. Layers
-          // Helper Canvas for edits
+          // History points are stored relative to *Original Natural Width*
+          // So we need to scale them to *Current Canvas Width*
+          const scaleX = canvas.width / originalImg.naturalWidth;
+          const scaleY = canvas.height / originalImg.naturalHeight;
+
+          // Use an offscreen canvas for drawing layers to handle blending correctly
           const drawCanvas = document.createElement("canvas");
           drawCanvas.width = canvas.width;
           drawCanvas.height = canvas.height;
@@ -651,30 +719,40 @@
           dCtx.lineJoin = "round";
 
           history.forEach((action) => {
-            // Setup Context based on action
             dCtx.globalCompositeOperation = "source-over";
             dCtx.globalAlpha = 1.0;
 
+            // Coordinates scaling
+            const ax = action.x * scaleX;
+            const ay = action.y * scaleY;
+            const as = action.size * scaleX; // Size also scales!
+
             if (action.type === "path") {
               dCtx.beginPath();
-              dCtx.lineWidth = action.size;
+              dCtx.lineWidth = as;
 
-              if (action.mode === "eraser") {
+              if (action.mode === "eraser")
                 dCtx.globalCompositeOperation = "destination-out";
-              } else if (action.mode === "highlighter") {
+              else if (action.mode === "highlighter") {
                 dCtx.globalCompositeOperation = "multiply";
                 dCtx.globalAlpha = 0.3;
                 dCtx.strokeStyle = action.color;
               } else if (action.mode === "mosaic") {
-                // Mosaic logic handled specially below
+                /* ... */
               } else {
                 dCtx.strokeStyle = action.color;
               }
 
               if (action.points.length > 0) {
-                dCtx.moveTo(action.points[0].x, action.points[0].y);
+                dCtx.moveTo(
+                  action.points[0].x * scaleX,
+                  action.points[0].y * scaleY
+                );
                 for (let i = 1; i < action.points.length; i++) {
-                  dCtx.lineTo(action.points[i].x, action.points[i].y);
+                  dCtx.lineTo(
+                    action.points[i].x * scaleX,
+                    action.points[i].y * scaleY
+                  );
                 }
               }
 
@@ -682,56 +760,51 @@
                 dCtx.save();
                 dCtx.stroke();
                 dCtx.clip();
-                // Simple Blur Simulation
                 dCtx.filter = "blur(5px)";
-                dCtx.drawImage(originalImg, 0, 0);
+                dCtx.drawImage(originalImg, 0, 0, canvas.width, canvas.height);
                 dCtx.restore();
                 dCtx.filter = "none";
               } else {
                 dCtx.stroke();
               }
             } else if (action.type === "stamp") {
-              dCtx.font = `${action.size}px "Pretendard", "Apple Color Emoji", sans-serif`;
+              dCtx.font = `${as}px "Pretendard", "Apple Color Emoji", sans-serif`;
               dCtx.textAlign = "center";
               dCtx.textBaseline = "middle";
-
               if (action.bgColor) {
                 const metrics = dCtx.measureText(action.text);
-                const w = metrics.width;
-                const p = action.size * 0.2;
+                const tw = metrics.width;
+                const p = as * 0.2;
                 dCtx.fillStyle = action.bgColor;
                 roundRect(
                   dCtx,
-                  action.x - w / 2 - p,
-                  action.y - action.size / 2 - p,
-                  w + p * 2,
-                  action.size + p * 2,
-                  8
+                  ax - tw / 2 - p,
+                  ay - as / 2 - p,
+                  tw + p * 2,
+                  as + p * 2,
+                  8 * scaleX
                 );
                 dCtx.fill();
               }
               dCtx.fillStyle = action.color || "#000";
-              dCtx.fillText(action.text, action.x, action.y);
+              dCtx.fillText(action.text, ax, ay);
             } else if (action.type === "image") {
+              const imgW = action.width * scaleX;
+              const imgH = action.height * scaleY;
               dCtx.drawImage(
                 action.img,
-                action.x - action.width / 2,
-                action.y - action.height / 2,
-                action.width,
-                action.height
+                ax - imgW / 2,
+                ay - imgH / 2,
+                imgW,
+                imgH
               );
             } else if (action.type === "patch") {
               dCtx.fillStyle = action.color;
               dCtx.beginPath();
-              if (action.shape === "rect") {
-                dCtx.fillRect(
-                  action.x - action.size / 2,
-                  action.y - action.size / 2,
-                  action.size,
-                  action.size
-                );
-              } else {
-                dCtx.arc(action.x, action.y, action.size / 2, 0, Math.PI * 2);
+              if (action.shape === "rect")
+                dCtx.fillRect(ax - as / 2, ay - as / 2, as, as);
+              else {
+                dCtx.arc(ax, ay, as / 2, 0, Math.PI * 2);
                 dCtx.fill();
               }
             }
@@ -739,17 +812,15 @@
 
           ctx.drawImage(drawCanvas, 0, 0);
 
-          if (currentMode === "crop" && cropStart && cropCurrent) {
+          if (currentMode === "crop" && cropStart && cropCurrent)
             drawCropOverlay();
-          }
-
-          // Update Reform Button State
-          // 리폼 버튼 활성화 조건: 필터가 켜져있거나, 히스토리(수정내역)가 하나라도 있을 때
           reformBtn.disabled = !(history.length > 0 || isFilterOn);
         }
 
         function drawCropOverlay() {
           ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+          // Coordinates for crop are in Canvas pixels.
+          // Logic remains same as they are transient.
           const x = Math.min(cropStart.x, cropCurrent.x);
           const y = Math.min(cropStart.y, cropCurrent.y);
           const w = Math.abs(cropCurrent.x - cropStart.x);
@@ -759,7 +830,6 @@
           ctx.fillRect(0, y + h, canvas.width, canvas.height - (y + h));
           ctx.fillRect(0, y, x, h);
           ctx.fillRect(x + w, y, canvas.width - (x + w), h);
-
           ctx.strokeStyle = "#fff";
           ctx.lineWidth = 2;
           ctx.strokeRect(x, y, w, h);
@@ -790,7 +860,6 @@
 
         const startDraw = (e) => {
           const { x, y } = getCoords(e);
-
           if (currentMode === "crop") {
             isCropping = true;
             cropStart = { x, y };
@@ -805,12 +874,15 @@
             "eraser",
             "mosaic",
           ].includes(currentMode);
-
           if (isPathTool) {
             isDrawing = true;
-            currentPath = [{ x, y }];
+            // Store points in Original Scale!
+            // Convert Canvas coords -> Original Coords
+            const scaleX = originalImg.naturalWidth / canvas.width;
+            const scaleY = originalImg.naturalHeight / canvas.height;
+            currentPath = [{ x: x * scaleX, y: y * scaleY }];
 
-            // Preview Dot
+            // Preview Dot (Draw directly on canvas)
             if (currentMode !== "mosaic") {
               ctx.beginPath();
               if (currentMode === "eraser") {
@@ -820,7 +892,6 @@
               } else {
                 ctx.fillStyle = elColor.value;
               }
-
               if (currentMode !== "highlighter") {
                 ctx.arc(x, y, elSize.value / 2, 0, Math.PI * 2);
                 ctx.fill();
@@ -832,7 +903,6 @@
 
         const moveDraw = (e) => {
           const { x, y } = getCoords(e);
-
           if (currentMode === "crop" && isCropping) {
             e.preventDefault();
             cropCurrent = { x, y };
@@ -849,9 +919,13 @@
           if (!isDrawing || !isPathTool) return;
           e.preventDefault();
 
-          currentPath.push({ x, y });
+          // Save to path (Original Scale)
+          const scaleX = originalImg.naturalWidth / canvas.width;
+          const scaleY = originalImg.naturalHeight / canvas.height;
+          currentPath.push({ x: x * scaleX, y: y * scaleY });
 
-          // Real-time drawing
+          // Real-time Visual (Canvas Scale)
+          // Just draw the last segment to avoid full redraw lag
           ctx.beginPath();
           ctx.lineCap = "round";
           ctx.lineJoin = "round";
@@ -872,14 +946,15 @@
             ctx.strokeStyle = elColor.value;
           }
 
-          if (currentPath.length >= 2) {
-            ctx.moveTo(
-              currentPath[currentPath.length - 2].x,
-              currentPath[currentPath.length - 2].y
-            );
-            ctx.lineTo(x, y);
-            ctx.stroke();
-          }
+          // To draw line, we need previous point in Canvas scale
+          // Previous point in path is in Original Scale
+          const prevP = currentPath[currentPath.length - 2];
+          const prevCanvasX = prevP.x / scaleX;
+          const prevCanvasY = prevP.y / scaleY;
+
+          ctx.moveTo(prevCanvasX, prevCanvasY);
+          ctx.lineTo(x, y);
+          ctx.stroke();
 
           ctx.globalCompositeOperation = "source-over";
           ctx.globalAlpha = 1.0;
@@ -890,7 +965,6 @@
             isCropping = false;
             return;
           }
-
           const isPathTool = [
             "pen",
             "highlighter",
@@ -898,13 +972,17 @@
             "mosaic",
           ].includes(currentMode);
 
+          // Scale factors for stamps
+          const scaleX = originalImg.naturalWidth / canvas.width;
+          const scaleY = originalImg.naturalHeight / canvas.height;
+
           if (isPathTool && isDrawing) {
             isDrawing = false;
             history.push({
               type: "path",
               mode: currentMode,
               color: elColor.value,
-              size: parseInt(elSize.value),
+              size: parseInt(elSize.value) * scaleX, // Store size relative to original width!
               points: currentPath,
             });
             redraw();
@@ -916,26 +994,26 @@
               history.push({
                 type: "stamp",
                 text: elStickerInput.value || "😺",
-                x,
-                y,
-                size,
+                x: x * scaleX,
+                y: y * scaleY,
+                size: size * scaleX,
               });
             } else if (currentMode === "patch") {
               history.push({
                 type: "patch",
                 shape: patchShape,
                 color: elColor.value,
-                x,
-                y,
-                size,
+                x: x * scaleX,
+                y: y * scaleY,
+                size: size * scaleX,
               });
             } else if (currentMode === "text") {
               history.push({
                 type: "stamp",
                 text: elTextInput.value || "텍스트",
-                x,
-                y,
-                size: parseInt(elSize.value) * 3, // text scales with size slider
+                x: x * scaleX,
+                y: y * scaleY,
+                size: size * 3 * scaleX,
                 color: elColor.value,
                 bgColor: elBgCheck.checked ? elBgColor.value : null,
               });
@@ -952,10 +1030,10 @@
               history.push({
                 type: "image",
                 img: customPhotoImg,
-                x,
-                y,
-                width: targetWidth,
-                height: targetHeight,
+                x: x * scaleX,
+                y: y * scaleY,
+                width: targetWidth * scaleX,
+                height: targetHeight * scaleX,
               });
             }
             redraw();
@@ -978,7 +1056,6 @@
           const w = Math.abs(cropCurrent.x - cropStart.x);
           const h = Math.abs(cropCurrent.y - cropStart.y);
           if (w < 10 || h < 10) return alert("영역이 너무 작습니다.");
-
           if (
             !confirm(
               "자르기를 적용하면 기존 편집 내역이 초기화됩니다. 진행할까요?"
@@ -986,28 +1063,48 @@
           )
             return;
 
-          // Apply Crop
+          // Apply Crop on CURRENT canvas state
           const tempCanvas = document.createElement("canvas");
           tempCanvas.width = w;
           tempCanvas.height = h;
           const tCtx = tempCanvas.getContext("2d");
-          // Filter needs to be baked in if active?
-          // -> For simplicity in V3.1, we apply current filter to the base image when cropping
+
+          // We crop from the *Current Canvas View* (filtered + original)
+          // Note: Filters are applied in redraw(), so we can just grab from main canvas?
+          // No, main canvas has overlays. We need to render the base image filtered + cropped.
           tCtx.filter = isFilterOn ? "grayscale(100%)" : "none";
-          tCtx.drawImage(originalImg, x, y, w, h, 0, 0, w, h);
+
+          // Since originalImg is full size, and crop coords are in Canvas coords,
+          // we need to map crop coords to Original Image coords.
+          const scaleX = originalImg.naturalWidth / canvas.width;
+          const scaleY = originalImg.naturalHeight / canvas.height;
+
+          tCtx.drawImage(
+            originalImg,
+            x * scaleX,
+            y * scaleY,
+            w * scaleX,
+            h * scaleY,
+            0,
+            0,
+            w,
+            h
+          );
 
           const newImg = new Image();
           newImg.onload = () => {
             originalImg = newImg;
-            widthInput.value = w;
+            widthInput.value = w; // Size is reset to the cropped pixel size
             heightInput.value = h;
             history = [];
             cropStart = null;
             cropCurrent = null;
-            isFilterOn = false; // Reset filter flag since it's baked in
+            isFilterOn = false;
             tools.filter.classList.remove("active");
             setMode("pen");
-            initCanvas();
+            // Re-init with new natural size
+            initCanvas(w, h);
+            updateUI();
           };
           newImg.src = tempCanvas.toDataURL();
         });
@@ -1025,25 +1122,22 @@
             redraw();
             return;
           }
-
           currentMode = mode;
           Object.values(tools).forEach((btn) => {
             if (btn !== tools.filter) btn.classList.remove("active");
           });
           if (tools[mode]) tools[mode].classList.add("active");
-
-          // Sub Panels
           cropPanel.classList.toggle("active", mode === "crop");
 
-          // Dynamic Option Rendering
-          toolOptions.innerHTML = ""; // Clear previous options
-
+          // Options
+          toolOptions.innerHTML = "";
           const crosshairTools = ["pen", "highlighter", "eraser", "mosaic"];
           if (crosshairTools.includes(mode)) {
             canvas.style.cursor = "crosshair";
             if (mode !== "eraser" && mode !== "mosaic")
               toolOptions.appendChild(elColor);
             toolOptions.appendChild(elSize);
+            toolOptions.appendChild(elSizeLabel);
           } else {
             canvas.style.cursor = "copy";
           }
@@ -1051,31 +1145,33 @@
           if (mode === "sticker") {
             toolOptions.appendChild(elStickerInput);
             toolOptions.appendChild(elSize);
+            toolOptions.appendChild(elSizeLabel);
           } else if (mode === "patch") {
             toolOptions.appendChild(elPatchRect);
             toolOptions.appendChild(elPatchCircle);
             toolOptions.appendChild(elColor);
             toolOptions.appendChild(elSize);
+            toolOptions.appendChild(elSizeLabel);
           } else if (mode === "text") {
             toolOptions.appendChild(elTextInput);
             toolOptions.appendChild(elColor);
             toolOptions.appendChild(elSize);
+            toolOptions.appendChild(elSizeLabel);
             toolOptions.appendChild(lblBg);
             toolOptions.appendChild(elBgColor);
           } else if (mode === "photo") {
             toolOptions.appendChild(elChangePhoto);
             toolOptions.appendChild(elSize);
+            toolOptions.appendChild(elSizeLabel);
           }
 
           if (mode !== "crop") redraw();
         }
 
-        // Attach Click Events
-        Object.keys(tools).forEach((key) => {
-          tools[key].addEventListener("click", () => setMode(key));
-        });
+        Object.keys(tools).forEach((key) =>
+          tools[key].addEventListener("click", () => setMode(key))
+        );
 
-        // Option Events
         elBgCheck.addEventListener("change", () => {
           elBgColor.disabled = !elBgCheck.checked;
         });
@@ -1093,12 +1189,15 @@
           layerInput.click();
         });
 
+        // Size Indicator Update
+        elSize.addEventListener("input", () => {
+          elSizeLabel.textContent = elSize.value;
+        });
+
         layerInput.addEventListener("change", (e) => {
           handleLayerFile(e.target.files[0]);
           e.target.value = "";
         });
-
-        // History Events
         btnUndo.addEventListener("click", () => {
           if (history.length > 0) {
             history.pop();
@@ -1114,132 +1213,14 @@
           }
         });
 
-        // Export
         reformBtn.addEventListener("click", () => {
           if (!originalImg) return;
-          const w = parseInt(widthInput.value) || originalImg.naturalWidth;
-          const h = parseInt(heightInput.value) || originalImg.naturalHeight;
-
-          const exportCanvas = document.createElement("canvas");
-          exportCanvas.width = w;
-          exportCanvas.height = h;
-          const eCtx = exportCanvas.getContext("2d");
-
-          // Filter
-          eCtx.filter = isFilterOn ? "grayscale(100%)" : "none";
-          eCtx.drawImage(originalImg, 0, 0, w, h);
-          eCtx.filter = "none";
-
-          const scaleX = w / originalImg.naturalWidth;
-          const scaleY = h / originalImg.naturalHeight;
-
-          eCtx.lineCap = "round";
-          eCtx.lineJoin = "round";
-
-          history.forEach((action) => {
-            const ax = action.x * scaleX;
-            const ay = action.y * scaleY;
-            const as = action.size * scaleX;
-
-            eCtx.globalCompositeOperation = "source-over";
-            eCtx.globalAlpha = 1.0;
-
-            if (action.type === "path") {
-              eCtx.beginPath();
-              eCtx.lineWidth = as;
-
-              if (action.mode === "eraser")
-                eCtx.globalCompositeOperation = "destination-out";
-              else if (action.mode === "highlighter") {
-                eCtx.globalCompositeOperation = "multiply";
-                eCtx.globalAlpha = 0.3;
-                eCtx.strokeStyle = action.color;
-              } else if (action.mode === "mosaic") {
-                // Mosaic Export
-                eCtx.save();
-                eCtx.beginPath();
-                if (action.points.length > 0) {
-                  eCtx.moveTo(
-                    action.points[0].x * scaleX,
-                    action.points[0].y * scaleY
-                  );
-                  for (let i = 1; i < action.points.length; i++) {
-                    eCtx.lineTo(
-                      action.points[i].x * scaleX,
-                      action.points[i].y * scaleY
-                    );
-                  }
-                }
-                eCtx.clip();
-                eCtx.filter = "blur(10px)";
-                eCtx.drawImage(originalImg, 0, 0, w, h);
-                eCtx.restore();
-                eCtx.filter = "none";
-                return;
-              } else {
-                eCtx.strokeStyle = action.color;
-              }
-
-              if (action.points.length > 0) {
-                eCtx.moveTo(
-                  action.points[0].x * scaleX,
-                  action.points[0].y * scaleY
-                );
-                for (let i = 1; i < action.points.length; i++) {
-                  eCtx.lineTo(
-                    action.points[i].x * scaleX,
-                    action.points[i].y * scaleY
-                  );
-                }
-              }
-              eCtx.stroke();
-            } else if (action.type === "stamp") {
-              eCtx.font = `${as}px "Pretendard", "Apple Color Emoji", sans-serif`;
-              eCtx.textAlign = "center";
-              eCtx.textBaseline = "middle";
-              if (action.bgColor) {
-                const metrics = eCtx.measureText(action.text);
-                const tw = metrics.width;
-                const p = as * 0.2;
-                eCtx.fillStyle = action.bgColor;
-                roundRect(
-                  eCtx,
-                  ax - tw / 2 - p,
-                  ay - as / 2 - p,
-                  tw + p * 2,
-                  as + p * 2,
-                  8 * scaleX
-                );
-                eCtx.fill();
-              }
-              eCtx.fillStyle = action.color || "#000";
-              eCtx.fillText(action.text, ax, ay);
-            } else if (action.type === "image") {
-              const imgW = action.width * scaleX;
-              const imgH = action.height * scaleY;
-              eCtx.drawImage(
-                action.img,
-                ax - imgW / 2,
-                ay - imgH / 2,
-                imgW,
-                imgH
-              );
-            } else if (action.type === "patch") {
-              eCtx.fillStyle = action.color;
-              eCtx.beginPath();
-              if (action.shape === "rect")
-                eCtx.fillRect(ax - as / 2, ay - as / 2, as, as);
-              else {
-                eCtx.arc(ax, ay, as / 2, 0, Math.PI * 2);
-                eCtx.fill();
-              }
-            }
-          });
-
-          exportCanvas.toBlob(
+          // Save using current canvas size (User WYSIWYG)
+          const link = document.createElement("a");
+          link.download = `reform_${Date.now()}.jpg`;
+          // Use highest quality
+          canvas.toBlob(
             (blob) => {
-              const link = document.createElement("a");
-              link.download = `reform_${Date.now()}.jpg`;
               link.href = URL.createObjectURL(blob);
               link.click();
             },
@@ -1248,14 +1229,6 @@
           );
         });
 
-        // Misc
-        widthInput.addEventListener("input", () => {
-          const w = parseInt(widthInput.value);
-          if (w && originalImg)
-            heightInput.value = Math.round(
-              w * (originalImg.naturalHeight / originalImg.naturalWidth)
-            );
-        });
         document
           .getElementById("change-image-btn")
           .addEventListener("click", () => fileInput.click());
@@ -1281,7 +1254,6 @@
           handleFile(e.dataTransfer.files[0]);
         });
 
-        // Initial UI Update
         updateUI = () => {
           reformBtn.disabled = true;
         };
